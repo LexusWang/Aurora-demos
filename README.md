@@ -41,7 +41,7 @@ Just configure a few parameters to run the attack script.
 
 Click the following headings for details:
 <details>
-<summary>EXAMPLE-execution_arp_cache_info_printed-1</summary>
+<summary>EXAMPLE-1_execution_keyboard_input_simulated-3</summary>
 
 The attack plan demonstrates a multi-stage adversarial strategy targeting `ManageEngine Desktop Central 9` via the `CVE-2015-8249` vulnerability, leveraging `Metasploit` and `ART` frameworks to achieve remote code execution (RCE), establish persistent command and control (C2), and conduct network reconnaissance(arp -a).
 
