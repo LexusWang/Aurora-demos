@@ -43,7 +43,7 @@ Click the following headings for details:
 <details>
 <summary>EXAMPLE-1_execution_keyboard_input_simulated-3</summary>
 
-The attack plan demonstrates a multi-stage adversarial strategy targeting `ManageEngine Desktop Central 9` via the `CVE-2015-8249` vulnerability, leveraging `Metasploit` and `ART` frameworks to achieve remote code execution (RCE), establish persistent command and control (C2), and conduct network reconnaissance(arp -a).
+This attack plan uses `Metasploit` and `Sliver` tools to compromise Windows systems. First, a listener is established to capture incoming connections. A malicious `Sliver` payload is then created and delivered by tricking the victim into downloading/running it, granting remote access. Finally, this access is leveraged to deploy a stealthy `Meterpreter` payload via `Sliver` for data exfiltration (`keyboard input simulation`)
 
 
 ![progress](images/example1.gif)
