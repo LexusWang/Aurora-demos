@@ -1,0 +1,36 @@
+# Aurora attack-chain parameters file (auto-generated).
+#
+# Fill in the values you want to pre-set. Use `null` (or omit a
+# key) to be prompted at runtime instead.
+#
+# Two sections:
+#   pddl_bindings — params the PDDL planner unified across multiple
+#       steps; each binding holds ONE value used everywhere it appears.
+#   steps — per-step free params that aren't unified by the planner.
+
+pddl_bindings:
+  # used by: 1_sliver-payload-windows-exe.SAVE_PATH
+  string0_var_in_plan: null
+  # used by: 2_simulate-download-execute-file-root.SAVE_PATH, 8_sliver-rm.RemotePath
+  string3_var_in_plan: null
+  # used by: 7_art-t1547_001-startup-folder-lnk.target_path
+  string1_var_in_plan: null
+
+steps:
+  "1_sliver-payload-windows-exe":
+    LHOST: null  # required
+    LPORT: null  # required
+  "2_simulate-download-execute-file-root":
+    LHOST: null  # required
+    LPORT: 8000  # required
+  "4_sliver-get_env":
+    name: null  # required
+  "6_art-t1003-gsecdump-lsass":
+    gsecdump_exe: 'C:\\Users\\Public\\gsecdump.exe'  # required
+    gsecdump_url: 'https://web.archive.org/web/20150606043951if_/http://www.truesec.se/Upload/Sakerhet/Tools/gsecdump-v2b5.exe'  # required
+    gsecdump_bin_hash: '94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC'  # required
+  "7_art-t1547_001-startup-folder-lnk":
+    shortcut_name: 'ArtPersist.lnk'  # required
+  "8_sliver-rm":
+    Recursive: null  # required
+    Force: null  # required

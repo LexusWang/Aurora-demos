@@ -1,0 +1,48 @@
+# chain-009 (verification pick #7) — 13 steps
+# shellcode payload + reflective PS load → sliver session 1 (non-elev)
+# → discovery → EXE payload → download-exec (non-elev) → lnk-root
+# (elevated) → sliver session 2 (elev) → derive PS → pypykatz →
+# startup-folder-lnk persistence → gpg4win encrypt
+#
+# Known failures (documented, do not fix):
+#   step 11 pypykatz — sliver implant task timeout ~35s (same as chain-003)
+#   step 13 gpg4win  — GPG4Win not preinstalled on Server 2022
+
+pddl_bindings:
+  # 1_sliver-payload-windows-shellcode.SAVE_PATH  (attacker-side)
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sc.bin
+  # 2_simulate-download-file.SAVE_PATH, 3_simulate-execute-shellcode-windows.SAVE_PATH
+  string4_var_in_plan: C:\Users\Public\chain_sc.bin
+  # 6_sliver-payload-windows-exe.SAVE_PATH  (attacker-side)
+  string3_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sc2.exe
+  # 7_simulate-download-execute-file.SAVE_PATH, 8_simulate-execute-lnk-windows-root.EXE_PATH
+  string2_var_in_plan: C:\Users\Public\chain_sc2.exe
+  # 12_art-t1547_001-startup-folder-lnk.target_path  (benign; notepad for easy cleanup)
+  string1_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_sliver-payload-windows-shellcode":
+    LHOST: 192.168.56.43
+    LPORT: 8443
+  "2_simulate-download-file":
+    LHOST: 192.168.56.43
+    LPORT: 8000
+  "6_sliver-payload-windows-exe":
+    LHOST: 192.168.56.43
+    LPORT: 8443
+  "7_simulate-download-execute-file":
+    LHOST: 192.168.56.43
+    LPORT: 8000
+  "11_art-t1003_002-pypykatz-live-lsa":
+    venv_path: 'C:\Users\Public\venv_pypykatz'
+  "12_art-t1547_001-startup-folder-lnk":
+    shortcut_name: 'ArtPersist.lnk'
+  "13_art-t1486-gpg4win-encrypt":
+    gpg_exe: 'C:\Program Files (x86)\GnuPG\bin\gpg.exe'
+    file_to_encrypt: 'C:\Users\Public\gpg_test_target.txt'
+    passphrase: 'AuroraPilotPass2026'
+
+# post-pilot cleanup (victim, elevated PS):
+#   Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\ArtPersist.lnk" -ErrorAction Ignore
+#   Remove-Item C:\Users\Public\chain_sc.bin,C:\Users\Public\chain_sc2.exe,C:\Users\Public\gpg_test_target.txt* -ErrorAction Ignore
+#   Remove-Item C:\Users\Public\venv_pypykatz -Recurse -Force -ErrorAction Ignore

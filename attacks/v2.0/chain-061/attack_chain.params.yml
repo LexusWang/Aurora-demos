@@ -1,0 +1,37 @@
+# Aurora attack-chain parameters file (auto-generated).
+#
+# Fill in the values you want to pre-set. Use `null` (or omit a
+# key) to be prompted at runtime instead.
+#
+# Two sections:
+#   pddl_bindings — params the PDDL planner unified across multiple
+#       steps; each binding holds ONE value used everywhere it appears.
+#   steps — per-step free params that aren't unified by the planner.
+
+pddl_bindings:
+  # used by: 1_sliver-payload-windows-exe.SAVE_PATH
+  string0_var_in_plan: null
+  # used by: 2_simulate-download-execute-file.SAVE_PATH, 5_simulate-execute-lnk-windows-root.EXE_PATH
+  string1_var_in_plan: null
+  # used by: 8_art-t1003_002-reg-save-sam.save_dir, 9_sliver-download.remote_path
+  string2_var_in_plan: null
+  # used by: 10_art-t1053_005-schtasks-at-time.task_command
+  string3_var_in_plan: null
+
+steps:
+  "1_sliver-payload-windows-exe":
+    LHOST: null  # required
+    LPORT: null  # required
+  "2_simulate-download-execute-file":
+    LHOST: null  # required
+    LPORT: 8000  # required
+  "9_sliver-download":
+    recurse: False  # required
+    output_dir: '/tmp'  # required
+  "10_art-t1053_005-schtasks-at-time":
+    task_name: 'spawn'  # required
+    task_time: 1210  # required
+  "11_art-t1531-change-password":
+    user_account: 'AtomicAdministrator'  # required
+    initial_password: 'User2ChangePW!'  # required
+    new_password: 'HuHuHUHoHo283283@dJD'  # required

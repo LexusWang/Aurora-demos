@@ -1,0 +1,38 @@
+# Aurora attack-chain parameters file (auto-generated).
+#
+# Fill in the values you want to pre-set. Use `null` (or omit a
+# key) to be prompted at runtime instead.
+#
+# Two sections:
+#   pddl_bindings — params the PDDL planner unified across multiple
+#       steps; each binding holds ONE value used everywhere it appears.
+#   steps — per-step free params that aren't unified by the planner.
+
+pddl_bindings:
+  # used by: 1_msfvenom-1.SAVE_PATH
+  string0_var_in_plan: null
+  # used by: 3_simulate-download-execute-file.SAVE_PATH, 6_simulate-execute-lnk-windows-root.EXE_PATH
+  string1_var_in_plan: null
+  # used by: 9_art-t1003_002-reg-save-sam.save_dir, 10_meterpreter-download.remote_path
+  string2_var_in_plan: null
+  # used by: 11_art-t1053_005-schtasks-at-time.task_command
+  string3_var_in_plan: null
+
+steps:
+  "1_msfvenom-1":
+    LHOST: null  # required
+    LPORT: null  # required
+  "2_set-msf-payload-handler-for-file":
+    LHOST: null
+    LPORT: null
+    payload_name: null
+  "3_simulate-download-execute-file":
+    LHOST: null  # required
+    LPORT: 8000  # required
+  "8_meterpreter-execute":
+    Commands: null  # required
+  "10_meterpreter-download":
+    output_dir: '/tmp'  # required
+  "11_art-t1053_005-schtasks-at-time":
+    task_name: 'spawn'  # required
+    task_time: 1210  # required

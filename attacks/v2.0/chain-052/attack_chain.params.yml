@@ -1,0 +1,44 @@
+# Aurora attack-chain parameters file (auto-generated).
+#
+# Fill in the values you want to pre-set. Use `null` (or omit a
+# key) to be prompted at runtime instead.
+#
+# Two sections:
+#   pddl_bindings — params the PDDL planner unified across multiple
+#       steps; each binding holds ONE value used everywhere it appears.
+#   steps — per-step free params that aren't unified by the planner.
+
+pddl_bindings:
+  # used by: 1_sliver-payload-windows-dll.SAVE_PATH
+  string0_var_in_plan: null
+  # used by: 2_simulate-download-file.SAVE_PATH, 3_simulate-execute-dll-windows.DLL_PATH
+  string4_var_in_plan: null
+  # used by: 6_sliver-payload-windows-exe.SAVE_PATH
+  string3_var_in_plan: null
+  # used by: 7_simulate-download-execute-file.SAVE_PATH, 8_simulate-execute-lnk-windows-root.EXE_PATH, 13_sliver-rm.RemotePath
+  string2_var_in_plan: null
+  # used by: 12_art-t1053_005-powershell-scheduled-task.task_command
+  string1_var_in_plan: null
+
+steps:
+  "1_sliver-payload-windows-dll":
+    LHOST: null  # required
+    LPORT: null  # required
+  "2_simulate-download-file":
+    LHOST: null  # required
+    LPORT: 8000  # required
+  "5_sliver-get_env":
+    name: null  # required
+  "6_sliver-payload-windows-exe":
+    LHOST: null  # required
+    LPORT: null  # required
+  "7_simulate-download-execute-file":
+    LHOST: null  # required
+    LPORT: 8000  # required
+  "11_art-t1555_003-lazagne-browsers":
+    lazagne_path: 'C:\\Users\\Public\\LaZagne.exe'  # required
+  "12_art-t1053_005-powershell-scheduled-task":
+    task_name: 'AtomicTask'  # required
+  "13_sliver-rm":
+    Recursive: null  # required
+    Force: null  # required

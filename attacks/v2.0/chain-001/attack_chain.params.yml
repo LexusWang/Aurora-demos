@@ -1,0 +1,89 @@
+# Aurora attack-chain parameters file — chain-001-fixed (env0)
+#
+# Chain narrative (shortest of the -fixed set, 7 steps):
+#   Sliver Windows EXE payload → victim downloads and runs it AS ADMIN
+#   (right-click → Run as administrator, triggers UAC consent) →
+#   elevated Sliver session established → sliver-get_env discovery →
+#   sliver-cmd derives elevated cmd → BITS notify-cmdline persistence
+#   (T1197) → change-password impact (T1531, creates a backdoor admin
+#   account + rotates password to lock rival admins out).
+#
+#   Original chain-001 had a redundant simulate-execute-lnk-windows
+#   (Step 3, non-elevated LNK re-run of the payload that Step 2 had
+#   already elevated-executed — planner artifact) plus the
+#   art-t1003_002-esentutl-vss-sam-copy credential-access step and its
+#   downstream sliver-download; all three removed in -fixed after
+#   parking the VSS-family actions on 2026-07-13 and identifying the
+#   LNK step as redundant. Chain went from 10 steps to 7; loses the
+#   T1003.002 credential-access tactic marker but keeps
+#   initial-access → discovery → persistence → impact end-to-end.
+#   See NOTES.txt and emulation_plan_details.manual_edits.
+#
+# Elevation model here is DIFFERENT from chain-002-fixed / chain-003-
+# fixed: no UAC-bypass hop, elevation happens at initial access (Step 2
+# is `simulate-download-execute-file-root` — victim explicitly launches
+# the payload as admin). Cleaner narrative but requires the operator to
+# be comfortable with the UAC consent prompt fire.
+#
+# Attacker: Kali at 192.168.56.43 with sliver-server running
+# Victim:   Windows Server 2022 VM, RDP as useradmin (medium-integrity
+#           split token, admin group but NOT built-in Administrator)
+
+pddl_bindings:
+  # used by: 1_sliver-payload-windows-exe.SAVE_PATH
+  # Attacker-side path where sliver writes the implant EXE.
+  string3_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain_sl.exe
+
+  # used by: 2_simulate-download-execute-file-root.SAVE_PATH
+  # Victim-side landing path — where victim's downloaded exe lands
+  # before they right-click Run as administrator.
+  string1_var_in_plan: C:\Users\Public\chain_sl.exe
+
+  # used by: 6_art-t1197-bits-notifycmdline.command_path
+  # Exe that bitsadmin fires on BITS state change. Notepad is the
+  # canonical benign verification target (matches chain-003-fixed /
+  # chain-004-fixed choices) — pilot only cares that /setnotifycmdline
+  # wires the callback, the exe launched doesn't need to be malicious
+  # for the persistence mechanic to be observable. Kept spaces-free
+  # so sliver.py's _dequote preprocessor handles it cleanly.
+  string2_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_sliver-payload-windows-exe":
+    LHOST: 192.168.56.43       # attacker IP baked into sliver implant
+    LPORT: 8443                # sliver's default mtls listener port
+
+  "2_simulate-download-execute-file-root":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali
+
+  "4_sliver-get_env":
+    name: USERNAME             # basic discovery — echoes the sliver
+                               # session's process user (should be
+                               # useradmin, confirms elevation lineage
+                               # from step 2 landed correctly)
+
+  "6_art-t1197-bits-notifycmdline":
+    bits_job_name: 'AuroraChainBITS'   # human-visible job name for
+                                       # later manual verification via
+                                       # `bitsadmin /list /allusers`
+    remote_file: 'https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1197/T1197.md'
+    local_file: 'C:\Users\Public\bits_download.dat'
+
+  "7_art-t1531-change-password":
+    user_account: 'AuroraPilot001'     # unique-enough to avoid prior-
+                                       # run pollution. If pilot fails
+                                       # with "account already exists"
+                                       # (System error 2224 from prior
+                                       # run), bump the number or
+                                       # `net user AuroraPilot001 /delete`
+                                       # on target first.
+    initial_password: 'Init!ChgPW23'          # 12 chars — under Windows
+                                              # `net user /add` 14-char
+                                              # legacy-compat warning
+                                              # threshold; >14 triggers
+                                              # an interactive Y/N prompt
+                                              # that sliver.cmd() can't
+                                              # answer (no stdin), and
+                                              # the user creation aborts.
+    new_password: 'Rot@ted!PW#42'              # 13 chars — same reason

