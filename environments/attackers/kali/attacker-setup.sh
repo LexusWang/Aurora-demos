@@ -57,9 +57,9 @@ host_ip = 127.0.0.1
 listening_port = 55552
 EOF
 
-# Kill existing tmux sessions
-tmux kill-session -t msf 2>/dev/null
-tmux kill-session -t sliver 2>/dev/null
+# Kill existing tmux sessions (may not exist yet — don't abort on missing)
+tmux kill-session -t msf 2>/dev/null || true
+tmux kill-session -t sliver 2>/dev/null || true
 
 # Check if msfconsole is available, install if not
 if ! command -v msfconsole &> /dev/null; then
