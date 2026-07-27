@@ -2,18 +2,21 @@
 
 Download two OVA files, import into your hypervisor, boot. Done in about 15 minutes (most of which is the download).
 
-> ⏳ **Coming in v2.0.1** — the OVA archives are still being built and uploaded to Zenodo. For the v2.0 release, please use the [from-scratch path](../from-scratch/) instead. This page will be filled in with download links, SHA256 hashes, and import commands once the OVAs are published.
+- **env0 victim OVA** — hosted here (see below)
+- **Kali attacker OVA** — hosted alongside the shared Kali attacker, at [`../../attackers/kali/quick-start/`](../../attackers/kali/quick-start/)
+
+> ⏳ **Coming in v2.0.1** — both OVAs are still being built and uploaded to Zenodo. For the v2.0 release, please use the [from-scratch path](../from-scratch/) instead. This page will be filled in with download links, SHA256 hashes, and import commands once the OVAs are published.
 
 ---
 
-## What you'll get
+## What you'll get (once published)
 
 Two OVA files, together ~25 GB compressed:
 
-| File | Size (approx.) | Contains |
-|---|---|---|
-| `env0-attacker-kali.ova` | ~5–7 GB | Kali Linux with Sliver, Metasploit, and `attack-executor` pre-installed |
-| `env0-victim-windows-server-2022.ova` | ~15–20 GB | Windows Server 2022 Evaluation with env0-specific configuration applied |
+| File | Location | Size (approx.) | Contains |
+|---|---|---|---|
+| `env0-victim-windows-server-2022.ova` | this directory | ~15–20 GB | Windows Server 2022 Evaluation with env0-specific configuration applied |
+| `kali-attacker.ova` | [`../../attackers/kali/quick-start/`](../../attackers/kali/quick-start/) | ~5–7 GB | Kali Linux with Sliver, Metasploit, and `attack-executor` pre-installed |
 
 Both are exported from the exact machines we used for our pilot runs. If you import them and run `chain-005`'s `attack_chain.py`, you should see output very close to the `result.txt` shipped with that chain.
 

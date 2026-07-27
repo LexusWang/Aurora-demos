@@ -35,17 +35,9 @@ This is the **only env0-specific delta** on top of the `cyberrange-sphere` base 
 
 ## Step 2 — Build the attacker VM (Kali Linux)
 
-The attacker VM is a stock Kali installation plus the [`Aurora-executor`](https://github.com/LexusWang/Aurora-executor) toolchain — Sliver, Metasploit, Python 3, and our [`attack-executor`](https://pypi.org/project/attack-executor/) package.
+env0 uses our shared Kali attacker. Full instructions (what the machine is, what's installed, how to provision it) live in [`../../attackers/kali/README.md`](../../attackers/kali/). Follow that page, then come back for Step 3.
 
-1. Install Kali Linux from an [official ISO](https://www.kali.org/get-kali/) into a new VM (4 GB RAM, ~20 GB disk)
-2. Log in and run the one-shot deploy script:
-
-    ```bash
-    mkdir -p ~/Aurora-executor && cd ~/Aurora-executor
-    curl -fsSL https://raw.githubusercontent.com/LexusWang/Aurora-executor/main/auto_deploy.sh | bash
-    ```
-
-The script provisions Sliver, Metasploit, Python dependencies, and `attack-executor`. See the [`Aurora-executor` README](https://github.com/LexusWang/Aurora-executor#readme) for full details, troubleshooting, and per-tool version pinning.
+If you're checking versioning: [`COMPATIBILITY.md`](../../../COMPATIBILITY.md) at the repo root maps each dataset release to the attacker-setup script version and pinned tool versions we tested against.
 
 ---
 

@@ -2,7 +2,7 @@
 
 # Aurora-demos
 
-**A dataset of emulated APT-style cyberattack chains — end-to-end runnable, symbolic-planned, and openly modeled.**
+**A dataset of emulated APT-style cyberattack chains: end-to-end runnable, symbolic-planned, and openly modeled.**
 
 Aurora is a system for automatically constructing high-fidelity, end-to-end, APT-style attack chains for emulation. It combines classical (PDDL-based) planning with LLM-assisted knowledge extraction to compose real attack tools (Sliver, Meterpreter, Atomic Red Team, native Windows utilities) into causally coherent multi-step chains — the kind of chains you'd otherwise write by hand for a red-team exercise.
 
@@ -52,19 +52,17 @@ Legacy 1.0 chains(250 CTI-derived chains from the original release)are preserved
 
 ---
 
-## Available environments
+## Available emulation environments
 
-| Environment | Description |
+| Name | Description |
 |---|---|
-| [**env0**](environments/env0/) | Windows Server 2022 victim + Kali Linux attacker, connected via a host-only network. Two setup paths: a pre-built OVA for one-click bring-up, or a scripted from-scratch build for full transparency and control. |
-
-Each `environments/envN/` directory is self-contained and independent of any specific release — the same env0, for example, may be used by v2.0 and future releases alike.
+| [**env0**](environments/env0/) | Windows Server 2022 (Victim) + Kali Linux (Attacker)|
 
 ---
 
 ## Known failure modes
 
-Chains are not guaranteed to run to completion — some steps fail at execution time even when the plan is well-formed. We've catalogued the recurring causes (three modes plus one common source of misreading) in [`FAILURE_MODES.md`](FAILURE_MODES.md). Read it before flagging a failed step as a defect.
+Chains are not guaranteed to run to completion, some steps fail at execution time even when the plan is well-formed. We've catalogued the recurring causes in [`FAILURE_MODES.md`](FAILURE_MODES.md). We recommend users read it to better understand Aurora.
 
 ---
 
