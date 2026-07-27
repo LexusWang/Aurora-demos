@@ -1,11 +1,11 @@
 # env0 — Windows Server 2022 attack testbed
 
-**env0** is the emulation environment used to develop and validate the Aurora attack chains. It consists of two virtual machines connected by a host-only network:
+**env0** consists of two virtual machines connected by a host-only network:
 
 | Machine | Role | OS | Details |
 |---|---|---|---|
-| **victim** | The target the attack chains hit — receives payloads, hosts the Sliver / Meterpreter implants, runs the persistence and impact steps | Windows Server 2022 Standard Evaluation | See below |
-| **attacker** | The operator's workstation — runs the Sliver C2 server, Metasploit, and the `attack_chain.py` wizard | Kali Linux | See [`../attackers/kali/`](../attackers/kali/) |
+| **victim** | The target the attack chains hit | Windows Server 2022 Standard Evaluation | See below |
+| **attacker** | The operator's workstation — runs the Sliver C2 server, Metasploit, and the `attack_chain.py` wizard | Kali 2025.1 | See [`../attackers/kali/`](../attackers/kali/) |
 
 The two machines see each other over a VirtualBox host-only adapter (or your hypervisor's equivalent). No internet access is required for chain execution once both machines are provisioned.
 
@@ -17,11 +17,11 @@ Pick whichever fits your situation:
 
 ### 🚀 [Quick start](quick-start/) — download OVAs, import, boot (~15 minutes)
 
-Pre-built OVAs — one for the env0 victim (in this directory) and one for the Kali attacker (in [`../attackers/kali/`](../attackers/kali/) once published). Hosted on Zenodo with SHA256 verification. Import into VirtualBox / VMware / any hypervisor that reads OVA, boot both VMs, done. **This is the default recommendation** — self-contained, hypervisor-agnostic, matches our pilot state exactly.
+Pre-built OVAs — one for the env0 victim (in this directory) and one for the Kali attacker (in [`../attackers/kali/`](../attackers/kali/) once published). Hosted on Zenodo with SHA256 verification. Import into VirtualBox / VMware / any hypervisor that reads OVA, boot both VMs, done. **This is the default recommendation** since they are self-contained, hypervisor-agnostic, matches our pilot state exactly.
 
 ### 🔧 [From scratch](from-scratch/) — build both VMs from official media (~60–90 minutes)
 
-Provision each VM yourself, starting from official Windows Server 2022 Evaluation and Kali Linux ISOs. More work but fully transparent — you see exactly what's installed and configured, and you can modify anything. **Use this path if:**
+Provision each VM yourself, starting from official Windows Server 2022 Evaluation and Kali Linux ISOs. More work but fully transparent. **Use this path if:**
 
 - You want to audit what's in the environment before running attacks against it
 - You're on hardware where OVA import doesn't work well (e.g., macOS on Apple Silicon)
