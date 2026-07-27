@@ -33,10 +33,16 @@ Or, one-shot curl from GitHub (grabs the current version on `main`):
 curl -fsSL https://raw.githubusercontent.com/LexusWang/Aurora-demos/main/environments/attackers/kali/attacker-setup.sh | bash
 ```
 
+The script installs everything into `~/Aurora-executor/` by default. To use a different location:
+
+```bash
+AURORA_EXECUTOR_HOME=/opt/aurora bash attacker-setup.sh
+```
+
 After the script finishes, activate the venv:
 
 ```bash
-source env_aurora-executor/bin/activate
+source ~/Aurora-executor/env_aurora-executor/bin/activate
 ```
 
 You're ready to run any chain from [`attacks/`](../../../attacks/) — copy that chain's `attack_chain.py` and `attack_chain.params.yml` over, adjust `LHOST` to this VM's IP, and go.

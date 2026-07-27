@@ -1,4 +1,16 @@
 #!/bin/bash
+set -e
+
+# ---------------------------------------------------------------
+# Install location — self-contained so the script works whether
+# invoked as `bash attacker-setup.sh`, `curl ... | bash`, or run
+# from any working directory. Override with:
+#   AURORA_EXECUTOR_HOME=/opt/aurora bash attacker-setup.sh
+# ---------------------------------------------------------------
+INSTALL_DIR="${AURORA_EXECUTOR_HOME:-$HOME/Aurora-executor}"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+echo "[+] Installing Aurora attacker toolchain into: $INSTALL_DIR"
 
 # Environment setup
 VENV_NAME="env_aurora-executor"
@@ -6,7 +18,7 @@ CONFIG_FILE="config.ini"
 
 # Install system dependencies
 sudo apt-get update
-sudo apt-get install -y virtualenv expect tmux
+sudo apt-get install -y virtualenv expect tmux wget
 
 # Create Python virtual environment
 virtualenv $VENV_NAME
