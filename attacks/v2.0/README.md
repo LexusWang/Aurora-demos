@@ -47,6 +47,20 @@ attacks/v2.0/
 
 ---
 
+## Watch it run
+
+Terminal captures of the five chains running end-to-end on env0. Or [watch all as a playlist](https://www.youtube.com/playlist?list=PLVLjOxpv8hL0).
+
+| Chain | Description | Video |
+|---|---|---|
+| **chain-001** | sliver-EXE + BITS persistence + change-password impact (~3 min) | [![thumb](https://img.youtube.com/vi/uD20iQvjpa8/mqdefault.jpg)](https://youtu.be/uD20iQvjpa8) |
+| **chain-002** | msf-EXE + schtasks persistence + net-stop-service impact (~10 min) | [![thumb](https://img.youtube.com/vi/eXzAfwUfIQM/mqdefault.jpg)](https://youtu.be/eXzAfwUfIQM) |
+| **chain-003** | msf-HTA + SAM dump + BITS persistence + restart (~13 min) | [![thumb](https://img.youtube.com/vi/DpsdTeLKRhc/mqdefault.jpg)](https://youtu.be/DpsdTeLKRhc) |
+| **chain-004** | msf-VBS + SAM dump + net-user-add persistence + reboot (~13 min) | [![thumb](https://img.youtube.com/vi/5HCD7QK-OSc/mqdefault.jpg)](https://youtu.be/5HCD7QK-OSc) |
+| **chain-005** | sliver-EXE + SAM dump + persistence + Spooler stop (~3 min) | [![thumb](https://img.youtube.com/vi/J9txdLHPlNA/mqdefault.jpg)](https://youtu.be/J9txdLHPlNA) |
+
+---
+
 ## Getting started
 
 ### 1. Set up the environment
