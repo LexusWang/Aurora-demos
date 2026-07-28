@@ -121,6 +121,6 @@ echo -e "  View Sliver session: tmux attach -t sliver"
 
 # Instructions for activating virtual environment
 echo -e "\n[!] To activate the virtual environment, run:"
-echo -e "    source $VENV_NAME/bin/activate"
-echo -e "\n[*] After activation, you can run attack scripts:"
-echo -e "    python attack.py"
+echo -e "    source $INSTALL_DIR/$VENV_NAME/bin/activate"
+echo -e "\n[*] Then cd into the chain directory and run:"
+echo -e "    python attack_chain.py --params attack_chain.params.yml"

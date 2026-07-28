@@ -417,7 +417,7 @@ async def main():
 
     print_welcome_message()
     from attack_executor.config import load_config
-    config = load_config(config_file_path="/home/kali/Desktop/Aurora-executor-demo/config.ini")
+    config = load_config(config_file_path="/home/kali/Aurora-executor/config.ini")
 
     pddl_parameters = {}
 
