@@ -4,6 +4,8 @@ A Kali Linux VM provisioned with everything an Aurora attack chain needs on the 
 
 This is the shared attacker used across our shipped emulation environments. Any `envN` in [`../`](../) that lists a Kali attacker in its testbed will point here.
 
+> **In a hurry?** A pre-built OVA is available in [`quick-start/`](quick-start/). Download, import, boot, done in ~10 minutes.
+
 ---
 
 ## What's inside

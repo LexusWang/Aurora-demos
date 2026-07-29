@@ -18,6 +18,18 @@ This page records which attacker-setup script goes with which dataset release.
 
 ---
 
+## Pre-built OVAs
+
+The exact machines produced by the setup scripts above are also published as OVA archives on Hugging Face Datasets:
+
+| Aurora-demos | OVA archive | SHA256 |
+|---|---|---|
+| **v2.0** | [`LexusWang/aurora-demos-envs`](https://huggingface.co/datasets/LexusWang/aurora-demos-envs) — `kali-attacker.ova` + `env0-victim-windows-server-2022.ova` | See the `.sha256` files alongside each OVA in the dataset |
+
+For quick-start download + import instructions, see [`environments/env0/quick-start/`](environments/env0/quick-start/) (victim) and [`environments/attackers/kali/quick-start/`](environments/attackers/kali/quick-start/) (attacker).
+
+---
+
 ## How to use this table
 
 **"I'm running dataset release vX.Y — which attacker machine do I need?"**

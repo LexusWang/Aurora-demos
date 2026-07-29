@@ -1,39 +1,75 @@
 # env0 quick-start — pre-built OVAs
 
-Download two OVA files, import into your hypervisor, boot. Done in about 15 minutes (most of which is the download).
+Download two OVAs, import into your hypervisor, boot. About 15 minutes total.
 
-- **env0 victim OVA** — hosted here (see below)
-- **Kali attacker OVA** — hosted alongside the shared Kali attacker, at [`../../attackers/kali/quick-start/`](../../attackers/kali/quick-start/)
-
-> ⏳ **Coming in v2.0.1** — both OVAs are still being built and uploaded to Zenodo. For the v2.0 release, please use the [from-scratch path](../from-scratch/) instead. This page will be filled in with download links, SHA256 hashes, and import commands once the OVAs are published.
+env0 is a pair of VMs, a Windows victim (this directory) and a Kali attacker. Both are hosted on Hugging Face Datasets for fast download.
 
 ---
 
-## What you'll get (once published)
+## Download
 
-Two OVA files, together ~25 GB compressed:
+**Victim VM — Windows Server 2022 Evaluation (6.6 GB compressed):**
 
-| File | Location | Size (approx.) | Contains |
-|---|---|---|---|
-| `env0-victim-windows-server-2022.ova` | this directory | ~15–20 GB | Windows Server 2022 Evaluation with env0-specific configuration applied |
-| `kali-attacker.ova` | [`../../attackers/kali/quick-start/`](../../attackers/kali/quick-start/) | ~5–7 GB | Kali Linux with Sliver, Metasploit, and `attack-executor` pre-installed |
+```bash
+cd ~/Downloads   # or wherever you want to keep the OVA
+wget https://huggingface.co/datasets/LexusWang/aurora-demos-envs/resolve/main/env0-victim-windows-server-2022.ova
+wget https://huggingface.co/datasets/LexusWang/aurora-demos-envs/resolve/main/env0-victim-windows-server-2022.ova.sha256
 
-Both are exported from the exact machines we used for our pilot runs. If you import them and run `chain-005`'s `attack_chain.py`, you should see output very close to the `result.txt` shipped with that chain.
+# Verify integrity
+shasum -a 256 -c env0-victim-windows-server-2022.ova.sha256    # macOS
+# or on Linux:
+sha256sum -c env0-victim-windows-server-2022.ova.sha256
+```
 
----
+Expected output: `env0-victim-windows-server-2022.ova: OK`
 
-## Legal note
+**Attacker VM — Kali Linux (7.4 GB compressed):**
 
-The Windows Server 2022 OVA contains **Microsoft Windows Server 2022 Standard Evaluation**, distributed under Microsoft's evaluation EULA. Key implications:
-
-- **180-day trial**: The OS activates as an evaluation copy and stops booting after 180 days from first activation. Re-import the OVA to reset, or convert to a licensed copy via `slmgr.vbs`.
-- **Not for production use**: Microsoft's EULA restricts evaluation SKUs to testing and evaluation purposes.
-- **We do not modify Windows binaries** — only account creation, service configuration, and Defender knobs (all documented in [`../from-scratch/`](../from-scratch/) and applied via the provisioning scripts).
-
-The Kali Linux OVA is distributed under the [Kali Linux license](https://www.kali.org/docs/policy/kali-linux-trademark-policy/) (GPL-derived, freely redistributable).
+Download instructions live in the attacker directory. See [`../../attackers/kali/quick-start/`](../../attackers/kali/quick-start/).
 
 ---
 
-## Once you have them running
+## Import (VirtualBox example)
 
-Head back to [`attacks/v2.0/README.md`](../../../attacks/v2.0/README.md) → *Getting started* → step 2 to pick a chain and run it.
+```bash
+VBoxManage import env0-victim-windows-server-2022.ova
+```
+
+For other hypervisors (VMware, Hyper-V, Parallels) the OVA import happens through their GUI's *File → Import* menu. The OVA declares its network as VirtualBox host-only; on non-VirtualBox platforms you may need to re-map to your hypervisor's equivalent isolated network.
+
+**Networking:** attach the imported VM's adapter to a **host-only network** shared with the Kali attacker. On VirtualBox:
+
+```bash
+# Create a host-only adapter if you don't already have one
+VBoxManage hostonlyif create
+VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.56.1 --netmask 255.255.255.0
+
+# Attach the imported VM
+VBoxManage modifyvm env0-victim-windows-server-2022 --nic1 hostonly --hostonlyadapter1 vboxnet0
+
+VBoxManage modifyvm kali-attacker --nic1 hostonly --hostonlyadapter1 vboxnet0
+```
+
+Both the victim and the Kali attacker must live on the **same** host-only network.
+
+---
+
+## First boot
+
+Log in as `useradmin` (Administrator-group user). See [`../README.md`](../README.md) for the full account inventory and env0 configuration.
+
+---
+
+## Windows Server 2022 evaluation notes
+
+The victim contains **Microsoft Windows Server 2022 Standard Evaluation**, distributed under Microsoft's evaluation EULA:
+
+- **180-day trial** from first activation. Re-import the OVA to reset the trial, or convert to a licensed copy via `slmgr.vbs`.
+- **Not for production use.**
+- **We do not modify Windows binaries** — only account creation, service configuration, and Defender knobs, all documented in [`../from-scratch/`](../from-scratch/).
+
+---
+
+## Once both VMs are running
+
+Head back to [`../../../attacks/v2.0/README.md`](../../../attacks/v2.0/README.md) → *Getting started* → step 2 to pick a chain and run it.
